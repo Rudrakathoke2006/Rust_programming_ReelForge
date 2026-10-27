@@ -1,0 +1,17 @@
+[package]
+name = "reelforge"
+version = "0.1.0"
+edition = "2021"
+description = "Photos in, vertical reel out. Smart-crop + shape layouts + FFmpeg / MLT (Kdenlive engine) rendering."
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "bmp", "tiff"] }
+walkdir = "2"
+axum = { version = "0.7", features = ["multipart"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }
+uuid = { version = "1", features = ["v4"] }
+
+[profile.release]
+opt-level = 3

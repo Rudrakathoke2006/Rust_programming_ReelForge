@@ -1,0 +1,7 @@
+/target
+/reel_work
+*.mp4
+*.exe
+.system_generated
+.DS_Store
+Thumbs.db

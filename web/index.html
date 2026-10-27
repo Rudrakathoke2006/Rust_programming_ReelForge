@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReelForge Studio — Photos to 9:16 Vertical Reels</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-dark: #090b10;
+    --card-bg: #12151f;
+    --card-hover: #191d2c;
+    --card-border: #23283b;
+    --primary: #7952f5;
+    --primary-hover: #6840ec;
+    --primary-glow: rgba(121, 82, 245, 0.35);
+    --accent-pink: #ff4785;
+    --accent-gold: #ffb830;
+    --text-main: #f3f5fa;
+    --text-muted: #959cb3;
+    --text-dim: #60677f;
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-pill: 999px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-main);
+    min-height: 100vh;
+    padding: 32px 16px 80px;
+    background-image: 
+      radial-gradient(ellipse at 20% 0%, rgba(121, 82, 245, 0.15) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(255, 71, 133, 0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 100%, rgba(30, 40, 70, 0.2) 0%, transparent 70%);
+  }
+
+  .container {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .brand-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(121, 82, 245, 0.12);
+    border: 1px solid rgba(121, 82, 245, 0.3);
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    font-size: 13px;
+    font-weight: 600;
+    color: #b59fff;
+    margin-bottom: 12px;
+  }
+  .brand-pill span.dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #a888ff;
+    box-shadow: 0 0 8px #a888ff;
+  }
+  h1 {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #ffffff 40%, #c4b5fd 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* Main Card */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+    margin-bottom: 24px;
+  }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .section-label .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 12px;
+  }
+
+  /* Event Theme Cards */
+  .event-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 540px) {
+    .event-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  .event-card {
+    position: relative;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1.5px solid var(--card-border);
+    border-radius: var(--radius-md);
+    padding: 14px 12px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    text-align: left;
+    user-select: none;
+  }
+  .event-card:hover {
+    background: var(--card-hover);
+    border-color: rgba(121, 82, 245, 0.4);
+    transform: translateY(-2px);
+  }
+  .event-card.active {
+    background: rgba(121, 82, 245, 0.12);
+    border-color: var(--primary);
+    box-shadow: 0 0 20px var(--primary-glow);
+  }
+  .event-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+  }
+  .event-card .emoji {
+    font-size: 26px;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .event-card .title {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-main);
+    display: block;
+    margin-bottom: 2px;
+  }
+  .event-card .desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.3;
+    display: block;
+  }
+  .event-card .check-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+  }
+  .event-card.active .check-badge {
+    display: flex;
+  }
+
+  /* Custom Title Field */
+  .title-group {
+    margin-bottom: 24px;
+  }
+  .input-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 6px;
+  }
+  .text-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-family: inherit;
+    font-size: 14px;
+    color: #fff;
+    transition: all 0.2s ease;
+  }
+  .text-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(121, 82, 245, 0.2);
+  }
+  .input-hint {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 5px;
+  }
+
+  /* Upload Dropzone */
+  .dropzone {
+    border: 2px dashed rgba(121, 82, 245, 0.4);
+    background: rgba(121, 82, 245, 0.03);
+    border-radius: var(--radius-md);
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .dropzone:hover, .dropzone.dragover {
+    border-color: var(--primary);
+    background: rgba(121, 82, 245, 0.08);
+  }
+  .dropzone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+  .dropzone .icon {
+    font-size: 38px;
+    margin-bottom: 8px;
+    display: inline-block;
+  }
+  .dropzone .prompt {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text-main);
+    margin-bottom: 4px;
+  }
+  .dropzone .sub {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* Thumbnail Gallery */
+  .preview-wrap {
+    margin-top: 14px;
+    display: none;
+  }
+  .preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 8px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+  .thumb-item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--card-border);
+  }
+  .thumb-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .thumb-item .thumb-idx {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    background: rgba(0,0,0,0.65);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+
+  /* Motion Style Pills */
+  .motion-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .motion-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+  }
+  .motion-card:hover {
+    border-color: rgba(121, 82, 245, 0.4);
+    background: var(--card-hover);
+  }
+  .motion-card.active {
+    background: rgba(121, 82, 245, 0.12);
+    border-color: var(--primary);
+    box-shadow: 0 0 15px var(--primary-glow);
+  }
+  .motion-card .m-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 2px;
+  }
+  .motion-card .m-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.3;
+  }
+
+  /* Audio & Timing Row */
+  .controls-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 520px) {
+    .controls-row { grid-template-columns: 1fr; }
+  }
+  .custom-file {
+    position: relative;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+    overflow: hidden;
+  }
+  .custom-file input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .custom-file .file-name {
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Switch Toggle */
+  .switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 24px;
+  }
+  .switch-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+  }
+  .switch-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+  }
+  .toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: #2b3044;
+    transition: .25s;
+    border-radius: var(--radius-pill);
+  }
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .25s;
+    border-radius: 50%;
+  }
+  input:checked + .slider {
+    background-color: var(--primary);
+  }
+  input:checked + .slider:before {
+    transform: translateX(20px);
+  }
+
+  /* Submit Button */
+  .btn-submit {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--primary) 0%, #a855f7 100%);
+    color: #fff;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 10px 25px var(--primary-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-submit:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(121, 82, 245, 0.5);
+  }
+  .btn-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Progress Box */
+  .progress-box {
+    display: none;
+    margin-top: 24px;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-md);
+    text-align: center;
+  }
+  .spinner {
+    width: 38px;
+    height: 38px;
+    border: 3.5px solid rgba(121, 82, 245, 0.2);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 14px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .status-step {
+    font-weight: 700;
+    font-size: 15px;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .status-hint {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* Result Video Player */
+  .result-card {
+    display: none;
+    margin-top: 28px;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(121, 82, 245, 0.3);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    text-align: center;
+  }
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 18px;
+  }
+  .video-frame {
+    max-width: 320px;
+    margin: 0 auto 20px;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    background: #000;
+  }
+  .video-frame video {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .action-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .btn-download {
+    padding: 12px 24px;
+    border-radius: var(--radius-pill);
+    background: #10b981;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35);
+    transition: all 0.2s ease;
+  }
+  .btn-download:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(16, 185, 129, 0.5);
+  }
+  .btn-secondary {
+    padding: 12px 20px;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    border: 1px solid var(--card-border);
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  /* Details Accordion */
+  details.advanced {
+    margin-top: 18px;
+    border-top: 1px solid var(--card-border);
+    padding-top: 14px;
+  }
+  details.advanced summary {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 12px;
+  }
+  details.advanced summary:hover {
+    color: var(--text-muted);
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header class="header">
+    <div class="brand-pill">
+      <span class="dot"></span>
+      ReelForge Creator Studio
+    </div>
+    <h1>Turn Photos into Viral Reels</h1>
+    <p class="subtitle">Smart-cut, boomerang motion, heart shapes & event collages in 9:16 vertical format.</p>
+  </header>
+
+  <!-- Creation Form -->
+  <form id="reelForm" class="card">
+    
+    <!-- Step 1: Event / Occasion -->
+    <div class="section-label">
+      <span class="num">1</span> Choose Occasion / Event
+    </div>
+    <div class="event-grid">
+      <label class="event-card active" data-event="birthday">
+        <input type="radio" name="event" value="birthday" checked>
+        <span class="emoji">🎂</span>
+        <span class="title">Birthday</span>
+        <span class="desc">Party collages, stars & confetti</span>
+        <span class="check-badge">✓</span>
+      </label>
+
+      <label class="event-card" data-event="anniversary">
+        <input type="radio" name="event" value="anniversary">
+        <span class="emoji">💍</span>
+        <span class="title">Anniversary</span>
+        <span class="desc">Heart shapes & romantic glow</span>
+        <span class="check-badge">✓</span>
+      </label>
+
+      <label class="event-card" data-event="romantic">
+        <input type="radio" name="event" value="romantic">
+        <span class="emoji">💖</span>
+        <span class="title">Romance</span>
+        <span class="desc">Love hearts & warm vibes</span>
+        <span class="check-badge">✓</span>
+      </label>
+
+      <label class="event-card" data-event="party">
+        <input type="radio" name="event" value="party">
+        <span class="emoji">🎉</span>
+        <span class="title">Party / Club</span>
+        <span class="desc">Multi-cut collages & rush</span>
+        <span class="check-badge">✓</span>
+      </label>
+
+      <label class="event-card" data-event="travel">
+        <input type="radio" name="event" value="travel">
+        <span class="emoji">✈️</span>
+        <span class="title">Travel / Trip</span>
+        <span class="desc">Polaroid frames & memories</span>
+        <span class="check-badge">✓</span>
+      </label>
+
+      <label class="event-card" data-event="general">
+        <input type="radio" name="event" value="general">
+        <span class="emoji">✨</span>
+        <span class="title">Cinematic</span>
+        <span class="desc">Clean flow & modern framing</span>
+        <span class="check-badge">✓</span>
+      </label>
+    </div>
+
+    <!-- Step 2: Custom Title / Caption -->
+    <div class="title-group">
+      <label class="input-label" for="customTitle">Banner Greeting / Title (Optional)</label>
+      <input type="text" id="customTitle" name="title" class="text-input" placeholder="e.g. Happy Birthday Maya! 🎂🎉">
+      <div class="input-hint">Leave blank to use the default occasion greeting.</div>
+    </div>
+
+    <!-- Step 3: Photos Dropzone -->
+    <div class="section-label">
+      <span class="num">2</span> Upload Photos
+    </div>
+    <div class="dropzone" id="dropArea">
+      <input type="file" id="photoInput" name="photos" accept="image/*" multiple required>
+      <div class="icon">📸</div>
+      <div class="prompt">Drag & drop your photos here, or click to browse</div>
+      <div class="sub">Select 3 to 25 photos (JPG, PNG, WebP) — High quality guaranteed</div>
+    </div>
+
+    <!-- Live Photo Thumbnail Preview -->
+    <div class="preview-wrap" id="previewWrap">
+      <div class="preview-header">
+        <span id="photoCount">0 photos selected</span>
+        <span style="font-size: 11px; color: var(--text-dim);">Best sharpness will be the opener</span>
+      </div>
+      <div class="preview-grid" id="previewGrid"></div>
+    </div>
+
+    <!-- Step 4: Motion Style -->
+    <div class="section-label" style="margin-top: 24px;">
+      <span class="num">3</span> Motion & Pacing Style
+    </div>
+    <div class="motion-grid">
+      <label class="motion-card active">
+        <input type="radio" name="motion" value="dynamic-mix" checked style="display:none">
+        <div class="m-title">⚡ Dynamic Mix</div>
+        <div class="m-desc">Boomerang pulse + fast-forward cuts + smooth zooms</div>
+      </label>
+
+      <label class="motion-card">
+        <input type="radio" name="motion" value="boomerang" style="display:none">
+        <div class="m-title">🔄 Boomerang Pulse</div>
+        <div class="m-desc">Playful bounce zoom-in & zoom-out on every photo</div>
+      </label>
+
+      <label class="motion-card">
+        <input type="radio" name="motion" value="fast-forward" style="display:none">
+        <div class="m-title">⏩ Fast-Forward</div>
+        <div class="m-desc">Snappy high-energy rush montage cuts</div>
+      </label>
+
+      <label class="motion-card">
+        <input type="radio" name="motion" value="ken-burns" style="display:none">
+        <div class="m-title">🎬 Smooth Cinematic</div>
+        <div class="m-desc">Classic slow Ken Burns camera glides</div>
+      </label>
+    </div>
+
+    <!-- Event Stickers Toggle -->
+    <div class="switch-row">
+      <div>
+        <div class="switch-label">✨ Event Stickers & Emoji Badges</div>
+        <div class="switch-sub">Floating hearts, celebration confetti & occasion title banner</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" name="stickers" value="true" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <!-- Audio & Pacing -->
+    <div class="controls-row">
+      <div>
+        <label class="input-label">🎵 Background Music (Optional)</label>
+        <label class="custom-file">
+          <span style="font-size:16px;">🎶</span>
+          <span class="file-name" id="musicName">Choose audio file (MP3, WAV)...</span>
+          <input type="file" id="musicInput" name="music" accept="audio/*">
+        </label>
+      </div>
+
+      <div>
+        <label class="input-label">⏱️ Cut Pacing (Seconds / Photo)</label>
+        <input type="number" name="shot_secs" class="text-input" step="0.1" min="0.8" max="6.0" value="2.2" placeholder="e.g. 2.2">
+      </div>
+    </div>
+
+    <!-- Advanced Settings -->
+    <details class="advanced">
+      <summary>⚙️ Advanced Timing & Engine Settings</summary>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px;">
+        <div>
+          <label class="input-label" style="font-size: 12px;">Music BPM (Syncs cuts to beat)</label>
+          <input type="number" name="bpm" class="text-input" min="60" max="220" placeholder="e.g. 120">
+        </div>
+        <div>
+          <label class="input-label" style="font-size: 12px;">Render Engine</label>
+          <select name="engine" class="text-input" style="padding: 10px;">
+            <option value="ffmpeg">FFmpeg (Ken Burns, Boomerang & Xfade)</option>
+            <option value="melt">MLT / melt</option>
+          </select>
+        </div>
+      </div>
+    </details>
+
+    <!-- Generate Button -->
+    <div style="margin-top: 24px;">
+      <button type="submit" id="submitBtn" class="btn-submit">
+        <span>✨ Generate My Reel</span>
+      </button>
+    </div>
+
+    <!-- Live Status / Progress -->
+    <div id="progressBox" class="progress-box">
+      <div class="spinner"></div>
+      <div class="status-step" id="statusTitle">Analysing Focus & Sharpness…</div>
+      <div class="status-hint" id="statusDesc">Finding the best visual moments and calculating smart crops.</div>
+    </div>
+  </form>
+
+  <!-- Result Reel Display Card -->
+  <div id="resultCard" class="result-card">
+    <div class="result-header">
+      <span>🎉</span> Your Vertical Reel is Ready!
+    </div>
+    
+    <div class="video-frame">
+      <video id="reelVideo" controls autoplay loop playsinline></video>
+    </div>
+
+    <div class="action-buttons">
+      <a id="downloadBtn" class="btn-download" download="reel.mp4" href="#">
+        <span>📥</span> Download Reel MP4
+      </a>
+      <button type="button" id="resetBtn" class="btn-secondary">
+        🔄 Create Another
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById('reelForm');
+  const photoInput = document.getElementById('photoInput');
+  const musicInput = document.getElementById('musicInput');
+  const musicName = document.getElementById('musicName');
+  const previewWrap = document.getElementById('previewWrap');
+  const previewGrid = document.getElementById('previewGrid');
+  const photoCount = document.getElementById('photoCount');
+  const submitBtn = document.getElementById('submitBtn');
+  const progressBox = document.getElementById('progressBox');
+  const statusTitle = document.getElementById('statusTitle');
+  const statusDesc = document.getElementById('statusDesc');
+  const resultCard = document.getElementById('resultCard');
+  const reelVideo = document.getElementById('reelVideo');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const customTitle = document.getElementById('customTitle');
+
+  // Event Theme Selection Cards
+  const eventCards = document.querySelectorAll('.event-card');
+  const eventPlaceholders = {
+    birthday: "e.g. Happy Birthday Priya! 🎂🎉",
+    anniversary: "e.g. Happy Anniversary Rahul & Sneha ❤️✨",
+    romantic: "e.g. Forever & Always My Love 💖💕",
+    party: "e.g. Weekend Vibes & Celebration 🍾🎉",
+    travel: "e.g. Goa Vacation Memories 2026 🌴✈️",
+    general: "e.g. Special Moments & Memories ✨"
+  };
+
+  eventCards.forEach(card => {
+    card.addEventListener('click', () => {
+      eventCards.forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      const val = card.querySelector('input').value;
+      if (eventPlaceholders[val]) {
+        customTitle.placeholder = eventPlaceholders[val];
+      }
+    });
+  });
+
+  // Motion Style Selection Cards
+  const motionCards = document.querySelectorAll('.motion-card');
+  motionCards.forEach(card => {
+    card.addEventListener('click', () => {
+      motionCards.forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      card.querySelector('input').checked = true;
+    });
+  });
+
+  // Music File Name Display
+  musicInput.addEventListener('change', e => {
+    if (e.target.files && e.target.files.length > 0) {
+      musicName.textContent = e.target.files[0].name;
+    } else {
+      musicName.textContent = "Choose audio file (MP3, WAV)...";
+    }
+  });
+
+  // Photo Input Preview Handling
+  let selectedFiles = [];
+  photoInput.addEventListener('change', e => {
+    if (e.target.files) {
+      selectedFiles = Array.from(e.target.files);
+      renderPreviews();
+    }
+  });
+
+  function renderPreviews() {
+    if (selectedFiles.length === 0) {
+      previewWrap.style.display = 'none';
+      return;
+    }
+    previewWrap.style.display = 'block';
+    photoCount.textContent = `${selectedFiles.length} photo${selectedFiles.length > 1 ? 's' : ''} selected`;
+    previewGrid.innerHTML = '';
+
+    selectedFiles.slice(0, 16).forEach((file, idx) => {
+      const item = document.createElement('div');
+      item.className = 'thumb-item';
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      const tag = document.createElement('span');
+      tag.className = 'thumb-idx';
+      tag.textContent = `#${idx + 1}`;
+      item.appendChild(img);
+      item.appendChild(tag);
+      previewGrid.appendChild(item);
+    });
+
+    if (selectedFiles.length > 16) {
+      const more = document.createElement('div');
+      more.className = 'thumb-item';
+      more.style.display = 'flex';
+      more.style.alignItems = 'center';
+      more.style.justifyContent = 'center';
+      more.style.background = 'rgba(255,255,255,0.06)';
+      more.style.color = '#fff';
+      more.style.fontWeight = 'bold';
+      more.style.fontSize = '12px';
+      more.textContent = `+${selectedFiles.length - 16}`;
+      previewGrid.appendChild(more);
+    }
+  }
+
+  // Progress Stage Simulation during generation
+  let progressInterval = null;
+  function startProgressCycle() {
+    progressBox.style.display = 'block';
+    const stages = [
+      { title: "Analysing Focus & Sharpness… 🔍", desc: "Evaluating Sobel edge energy and picking the best opener." },
+      { title: "Framing Collages & Heart Shapes… 🎨", desc: "Composing anti-aliased event masks, cards and festive stickers." },
+      { title: "Calculating Boomerang & Zoom Motion… 🎬", desc: "Generating forward-and-back bounce zooms and fast transitions." },
+      { title: "Rendering 1080×1920 Vertical MP4… ⚡", desc: "Encoding x264 video with synchronized music and beat fades." }
+    ];
+    let i = 0;
+    statusTitle.textContent = stages[0].title;
+    statusDesc.textContent = stages[0].desc;
+    progressInterval = setInterval(() => {
+      i = (i + 1) % stages.length;
+      statusTitle.textContent = stages[i].title;
+      statusDesc.textContent = stages[i].desc;
+    }, 4500);
+  }
+
+  function stopProgressCycle() {
+    if (progressInterval) clearInterval(progressInterval);
+    progressBox.style.display = 'none';
+  }
+
+  // Form Submit Handler
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (photoInput.files.length === 0) {
+      alert("Please select at least 1 photo to build your reel.");
+      return;
+    }
+
+    submitBtn.disabled = true;
+    resultCard.style.display = 'none';
+    startProgressCycle();
+
+    const formData = new FormData(form);
+
+    try {
+      const response = await fetch('/generate', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to generate reel.");
+      }
+
+      const blob = await response.blob();
+      const videoUrl = URL.createObjectURL(blob);
+      reelVideo.src = videoUrl;
+      downloadBtn.href = videoUrl;
+      downloadBtn.download = `reelforge_${Date.now()}.mp4`;
+
+      stopProgressCycle();
+      resultCard.style.display = 'block';
+      resultCard.scrollIntoView({ behavior: 'smooth' });
+    } catch (err) {
+      stopProgressCycle();
+      alert("Error generating reel: " + err.message);
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    resultCard.style.display = 'none';
+    form.scrollIntoView({ behavior: 'smooth' });
+  });
+</script>
+
+</body>
+</html>
