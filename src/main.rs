@@ -1,4 +1,5 @@
 mod analyze;
+mod analytics;
 mod compose;
 mod pipeline;
 mod render_ffmpeg;

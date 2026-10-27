@@ -2,6 +2,7 @@
 /reel_work
 *.mp4
 *.exe
+/reelforge_data
 .system_generated
 .DS_Store
 Thumbs.db

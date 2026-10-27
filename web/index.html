@@ -602,9 +602,14 @@
 <div class="container">
   <!-- Header -->
   <header class="header">
-    <div class="brand-pill">
-      <span class="dot"></span>
-      ReelForge Creator Studio
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+      <div class="brand-pill" style="margin-bottom: 0;">
+        <span class="dot"></span>
+        ReelForge Pro Creator Studio
+      </div>
+      <a href="/admin" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: var(--radius-pill); background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s ease;">
+        <span>📊</span> Admin & User Intelligence Hub →
+      </a>
     </div>
     <h1>Turn Photos into Viral Reels</h1>
     <p class="subtitle">Smart-cut, boomerang motion, heart shapes & event collages in 9:16 vertical format.</p>
@@ -613,6 +618,16 @@
   <!-- Creation Form -->
   <form id="reelForm" class="card">
     
+    <!-- Step 0: Creator Identification (For professional tracking) -->
+    <div style="margin-bottom: 24px; padding: 14px 16px; background: rgba(121, 82, 245, 0.06); border: 1px solid rgba(121, 82, 245, 0.2); border-radius: var(--radius-md);">
+      <label class="input-label" for="userEmail" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>👤 Creator Profile / Email (Usage & Reel Counter)</span>
+        <span id="savedUserBadge" style="font-size: 11px; color: #10b981; font-weight: 700; display: none;">✓ Profile Remembered</span>
+      </label>
+      <input type="text" id="userEmail" name="user" class="text-input" placeholder="e.g. alex@example.com or @alex_vlogs" required>
+      <div class="input-hint">Your usage count, total reels produced, and favorite themes are tracked to this profile.</div>
+    </div>
+
     <!-- Step 1: Event / Occasion -->
     <div class="section-label">
       <span class="num">1</span> Choose Occasion / Event
@@ -824,6 +839,26 @@
   const downloadBtn = document.getElementById('downloadBtn');
   const resetBtn = document.getElementById('resetBtn');
   const customTitle = document.getElementById('customTitle');
+  const userEmailInput = document.getElementById('userEmail');
+  const savedUserBadge = document.getElementById('savedUserBadge');
+
+  // Creator Profile Persistence
+  const savedUser = localStorage.getItem('reelforge_user_id');
+  if (savedUser) {
+    userEmailInput.value = savedUser;
+    savedUserBadge.style.display = 'inline';
+    savedUserBadge.textContent = `✓ Active as ${savedUser}`;
+  }
+  userEmailInput.addEventListener('input', e => {
+    const val = e.target.value.trim();
+    if (val) {
+      localStorage.setItem('reelforge_user_id', val);
+      savedUserBadge.style.display = 'inline';
+      savedUserBadge.textContent = `✓ Remembered`;
+    } else {
+      savedUserBadge.style.display = 'none';
+    }
+  });
 
   // Event Theme Selection Cards
   const eventCards = document.querySelectorAll('.event-card');
