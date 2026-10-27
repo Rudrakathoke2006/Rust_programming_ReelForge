@@ -61,7 +61,7 @@ pub fn build_args(cfg: &Config, shots: &[Shot]) -> Vec<String> {
     let total = n as f32 * dsec - (n.saturating_sub(1)) as f32 * tsec;
 
     let mut text_filter = String::new();
-    if cfg.stickers {
+    if cfg.stickers || cfg.title.is_some() {
         let font_path = if std::path::Path::new("C:/Windows/Fonts/seguiemj.ttf").exists() {
             Some("C\\:/Windows/Fonts/seguiemj.ttf")
         } else if std::path::Path::new("C:/Windows/Fonts/arial.ttf").exists() {
@@ -71,20 +71,30 @@ pub fn build_args(cfg: &Config, shots: &[Shot]) -> Vec<String> {
         };
 
         if let Some(font) = font_path {
-            let text_content = cfg
-                .title
-                .as_deref()
-                .unwrap_or_else(|| cfg.event.default_badge_text());
-            let clean_text = text_content
-                .replace('\'', "")
-                .replace(':', " ")
-                .replace('\\', "");
-            if !clean_text.is_empty() {
-                let badge_duration = (total.min(4.5)).max(2.0);
-                text_filter = format!(
-                    ",drawtext=fontfile='{font}':text='{clean_text}':fontsize=36:fontcolor=white:x=(w-text_w)/2:y=148:enable='between(t,0.1,{badge_duration:.2})'"
-                );
-            }
+            let (line1, line2) = crate::templates::split_title(
+                cfg.title.as_deref().unwrap_or(""),
+                cfg.event,
+            );
+            let line1_clean = line1.replace('\'', "").replace(':', " ").replace('\\', "");
+            let line2_clean = line2.replace('\'', "").replace(':', " ").replace('\\', "");
+
+            // Get title accent color from template
+            let accent_hex = if let Some(tid) = &cfg.template_id {
+                crate::templates::find_template(tid)
+                    .map(|t| t.palette.title_hex())
+                    .unwrap_or("0xffd700")
+            } else {
+                "0xffd700"
+            };
+
+            let badge_duration = (total.min(3.8)).max(2.2);
+            // Two-tone dynamic hero title in opening hook:
+            // Line 1: Elegant uppercase prefix/occasion (white @ 90% opacity, size 26, y=120)
+            // Line 2: Bold hero subject/name in template palette accent (size 42, y=160)
+            text_filter = format!(
+                ",drawtext=fontfile='{font}':text='{line1_clean}':fontsize=26:fontcolor=white@0.9:x=(w-text_w)/2:y=120:enable='between(t,0.2,{badge_duration:.2})'\
+                ,drawtext=fontfile='{font}':text='{line2_clean}':fontsize=42:fontcolor={accent_hex}:x=(w-text_w)/2:y=160:enable='between(t,0.2,{badge_duration:.2})'"
+            );
         }
     }
 

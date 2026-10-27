@@ -16,45 +16,21 @@ pub fn plan(cfg: &Config, photos: &[Analysis]) -> Vec<(Layout, Vec<usize>, ShotM
         order.insert(0, best);
     }
 
-    // Theme-tailored layout sequence
-    let cycle = match cfg.event {
-        EventTheme::Anniversary | EventTheme::Romantic => vec![
-            Layout::Heart,
-            Layout::Card,
-            Layout::Heart,
-            Layout::BlurFit,
-            Layout::Split,
-        ],
-        EventTheme::Birthday => vec![
-            Layout::Collage3,
-            Layout::Star,
-            Layout::Circle,
-            Layout::Card,
-            Layout::Split,
-            Layout::Heart,
-        ],
-        EventTheme::Party => vec![
-            Layout::Collage3,
-            Layout::Star,
-            Layout::Diamond,
-            Layout::Split,
-            Layout::BlurFit,
-        ],
-        EventTheme::Travel => vec![
-            Layout::Polaroid,
-            Layout::Split,
-            Layout::Card,
-            Layout::BlurFit,
-            Layout::Fill,
-        ],
-        EventTheme::General => vec![
-            Layout::Circle,
-            Layout::Card,
-            Layout::Heart,
-            Layout::Diamond,
-            Layout::BlurFit,
-        ],
+    let active_template = if let Some(ref tid) = cfg.template_id {
+        crate::templates::TEMPLATES
+            .iter()
+            .find(|t| t.id == tid)
+            .cloned()
+            .unwrap_or_else(|| {
+                let scored = crate::templates::score_templates(cfg.event, photos, cfg.title.as_deref().unwrap_or(""));
+                scored[0].template.clone()
+            })
+    } else {
+        let scored = crate::templates::score_templates(cfg.event, photos, cfg.title.as_deref().unwrap_or(""));
+        scored[0].template.clone()
     };
+
+    let cycle = active_template.layouts;
 
     let mut shots = Vec::new();
     let mut k = 0usize;
@@ -66,9 +42,12 @@ pub fn plan(cfg: &Config, photos: &[Analysis]) -> Vec<(Layout, Vec<usize>, ShotM
 
         if i == 0 {
             // Opener shot
-            let opener_layout = match cfg.event {
-                EventTheme::Anniversary | EventTheme::Romantic if photos.len() >= 2 => Layout::Heart,
-                _ => Layout::Fill,
+            let opener_layout = if cycle.contains(&Layout::Heart) && photos.len() >= 2 {
+                Layout::Heart
+            } else if cycle.contains(&Layout::Star) && photos.len() >= 2 {
+                Layout::Star
+            } else {
+                cycle[0]
             };
             shots.push((opener_layout, vec![idx]));
             i += 1;
@@ -76,7 +55,7 @@ pub fn plan(cfg: &Config, photos: &[Analysis]) -> Vec<(Layout, Vec<usize>, ShotM
         }
 
         // 3-photo celebration collage when photos available
-        let wants_collage3 = matches!(cfg.event, EventTheme::Birthday | EventTheme::Party) && (k % 4 == 1);
+        let wants_collage3 = cycle.contains(&Layout::Collage3) && (k % 3 == 1);
         if wants_collage3 && i + 2 < order.len() {
             shots.push((Layout::Collage3, vec![idx, order[i + 1], order[i + 2]]));
             i += 3;
@@ -102,12 +81,18 @@ pub fn plan(cfg: &Config, photos: &[Analysis]) -> Vec<(Layout, Vec<usize>, ShotM
         i += 1;
     }
 
-    // Assign motion mode per shot
+    // Assign motion mode per shot (combining template motion and user preference)
+    let base_motion = if cfg.motion == MotionMode::DynamicMix {
+        active_template.motion
+    } else {
+        cfg.motion
+    };
+
     shots
         .into_iter()
         .enumerate()
         .map(|(shot_idx, (layout, idxs))| {
-            let motion = match cfg.motion {
+            let motion = match base_motion {
                 MotionMode::Boomerang => ShotMotion::Boomerang,
                 MotionMode::FastForward => ShotMotion::FastForward,
                 MotionMode::KenBurns => {
@@ -117,16 +102,13 @@ pub fn plan(cfg: &Config, photos: &[Analysis]) -> Vec<(Layout, Vec<usize>, ShotM
                         ShotMotion::ZoomOut
                     }
                 }
-                MotionMode::DynamicMix => {
-                    // Modern creator rhythm: snappy opener, alternating boomerangs and smooth cuts
-                    match shot_idx % 5 {
-                        0 => ShotMotion::FastForward, // energetic hook opener
-                        1 => ShotMotion::ZoomIn,
-                        2 => ShotMotion::Boomerang,   // bounce on hero shape/collage
-                        3 => ShotMotion::ZoomOut,
-                        _ => ShotMotion::Boomerang,
-                    }
-                }
+                MotionMode::DynamicMix => match shot_idx % 5 {
+                    0 => ShotMotion::FastForward,
+                    1 => ShotMotion::ZoomIn,
+                    2 => ShotMotion::Boomerang,
+                    3 => ShotMotion::ZoomOut,
+                    _ => ShotMotion::Boomerang,
+                },
             };
             (layout, idxs, motion)
         })
@@ -136,14 +118,32 @@ pub fn plan(cfg: &Config, photos: &[Analysis]) -> Vec<(Layout, Vec<usize>, ShotM
 pub fn render_all(cfg: &Config, photos: &[Analysis]) -> Result<Vec<Shot>> {
     std::fs::create_dir_all(cfg.work_dir.join("frames"))?;
     let mut out = Vec::new();
+
+    let active_template = if let Some(ref tid) = cfg.template_id {
+        crate::templates::TEMPLATES
+            .iter()
+            .find(|t| t.id == tid)
+            .cloned()
+            .unwrap_or_else(|| {
+                let scored = crate::templates::score_templates(cfg.event, photos, cfg.title.as_deref().unwrap_or(""));
+                scored[0].template.clone()
+            })
+    } else {
+        let scored = crate::templates::score_templates(cfg.event, photos, cfg.title.as_deref().unwrap_or(""));
+        scored[0].template.clone()
+    };
+
+    println!("  🎨 Active Template: '{}' [{:?}] ({})", active_template.name, active_template.motion, active_template.description);
+    let border_color = active_template.palette.border_rgb();
+
     let planned = plan(cfg, photos);
     let total = planned.len();
 
     for (n, (layout, idxs, motion)) in planned.into_iter().enumerate() {
         let imgs: Vec<DynamicImage> = idxs.iter().map(|&i| load(&photos[i].path)).collect::<Result<_>>()?;
-        let mut canvas = compose(cfg.width, cfg.height, layout, &imgs, cfg.event);
+        let mut canvas = compose(cfg.width, cfg.height, layout, &imgs, border_color);
         if cfg.stickers {
-            apply_event_decorations(&mut canvas, cfg.event, n, total);
+            apply_event_decorations(&mut canvas, cfg.event, active_template.sticker_theme, n, total);
         }
         let frame: PathBuf = cfg.work_dir.join("frames").join(format!("shot_{n:03}.png"));
         canvas.save(&frame)?;
@@ -153,7 +153,7 @@ pub fn render_all(cfg: &Config, photos: &[Analysis]) -> Result<Vec<Shot>> {
     Ok(out)
 }
 
-pub fn compose(w: u32, h: u32, layout: Layout, imgs: &[DynamicImage], event: EventTheme) -> RgbaImage {
+pub fn compose(w: u32, h: u32, layout: Layout, imgs: &[DynamicImage], border_color: [u8; 3]) -> RgbaImage {
     let first = &imgs[0];
     match layout {
         Layout::Fill => fill(first, w, h).to_rgba8(),
@@ -164,11 +164,11 @@ pub fn compose(w: u32, h: u32, layout: Layout, imgs: &[DynamicImage], event: Eve
             imageops::overlay(&mut c, &fitted, x as i64, y as i64);
             c
         }
-        Layout::Circle => shaped(first, w, h, 0.86, 1.0, Shape::Circle, event),
-        Layout::Diamond => shaped(first, w, h, 0.90, 1.0, Shape::Diamond, event),
-        Layout::Card => shaped(first, w, h, 0.90, 5.0 / 4.0, Shape::Rounded(56.0), event),
-        Layout::Heart => shaped(first, w, h, 0.92, 1.0, Shape::Heart, event),
-        Layout::Star => shaped(first, w, h, 0.92, 1.0, Shape::Star, event),
+        Layout::Circle => shaped(first, w, h, 0.86, 1.0, Shape::Circle, border_color),
+        Layout::Diamond => shaped(first, w, h, 0.90, 1.0, Shape::Diamond, border_color),
+        Layout::Card => shaped(first, w, h, 0.90, 5.0 / 4.0, Shape::Rounded(56.0), border_color),
+        Layout::Heart => shaped(first, w, h, 0.92, 1.0, Shape::Heart, border_color),
+        Layout::Star => shaped(first, w, h, 0.92, 1.0, Shape::Star, border_color),
         Layout::Split => {
             let top = fill(&imgs[0], w, h / 2).to_rgba8();
             let bot = fill(imgs.get(1).unwrap_or(first), w, h - h / 2).to_rgba8();
@@ -324,7 +324,7 @@ fn coverage(shape: Shape, px: f32, py: f32, tw: f32, th: f32, inset: f32) -> f32
     (0.5 - (sd + inset)).clamp(0.0, 1.0)
 }
 
-fn shaped(img: &DynamicImage, w: u32, h: u32, width_frac: f32, tile_aspect_h_over_w: f32, shape: Shape, event: EventTheme) -> RgbaImage {
+fn shaped(img: &DynamicImage, w: u32, h: u32, width_frac: f32, tile_aspect_h_over_w: f32, shape: Shape, border_color: [u8; 3]) -> RgbaImage {
     let mut canvas = blurred_bg(img, w, h);
     let tw = (w as f32 * width_frac) as u32;
     let th = (tw as f32 * tile_aspect_h_over_w) as u32;
@@ -332,11 +332,7 @@ fn shaped(img: &DynamicImage, w: u32, h: u32, width_frac: f32, tile_aspect_h_ove
     let tile = img.crop_imm(x, y, cw, ch).resize_exact(tw, th, FilterType::Lanczos3).to_rgba8();
     let (ox, oy) = ((w - tw) as i64 / 2, (h - th) as i64 / 2);
 
-    let border_color = match event {
-        EventTheme::Anniversary | EventTheme::Romantic => [255.0, 230.0, 240.0],
-        EventTheme::Birthday | EventTheme::Party => [255.0, 240.0, 185.0],
-        _ => [255.0, 255.0, 255.0],
-    };
+    let border_f = [border_color[0] as f32, border_color[1] as f32, border_color[2] as f32];
 
     // 10px themed border: outer coverage minus inner (inset) coverage
     for ty in 0..th {
@@ -352,7 +348,7 @@ fn shaped(img: &DynamicImage, w: u32, h: u32, width_frac: f32, tile_aspect_h_ove
             let mut rgb = [src[0] as f32, src[1] as f32, src[2] as f32];
             let b = 1.0 - inner;
             for c in 0..3 {
-                rgb[c] = rgb[c] * (1.0 - b) + border_color[c] * b;
+                rgb[c] = rgb[c] * (1.0 - b) + border_f[c] * b;
             }
             let dst = canvas.get_pixel_mut(cx, cy);
             for c in 0..3 {
@@ -364,15 +360,15 @@ fn shaped(img: &DynamicImage, w: u32, h: u32, width_frac: f32, tile_aspect_h_ove
 }
 
 /// Apply decorative event elements (floating hearts, confetti, sparkles)
-pub fn apply_event_decorations(canvas: &mut RgbaImage, event: EventTheme, shot_idx: usize, total_shots: usize) {
+pub fn apply_event_decorations(canvas: &mut RgbaImage, event: EventTheme, sticker_theme: &str, shot_idx: usize, total_shots: usize) {
     let (w, h) = (canvas.width(), canvas.height());
 
     // Draw top frosted glass badge base on opener and closing shots
     if shot_idx == 0 || shot_idx == total_shots.saturating_sub(1) {
-        let badge_w = 540u32;
-        let badge_h = 76u32;
+        let badge_w = 560u32;
+        let badge_h = 84u32;
         let bx = (w.saturating_sub(badge_w)) / 2;
-        let by = 130u32;
+        let by = 120u32;
         let r = badge_h as f32 / 2.0;
 
         let badge_border = match event {
@@ -402,9 +398,9 @@ pub fn apply_event_decorations(canvas: &mut RgbaImage, event: EventTheme, shot_i
                                 cx,
                                 cy,
                                 Rgba([
-                                    (old[0] as f32 * 0.25) as u8,
-                                    (old[1] as f32 * 0.25) as u8,
-                                    (old[2] as f32 * 0.28) as u8,
+                                    (old[0] as f32 * 0.22) as u8,
+                                    (old[1] as f32 * 0.22) as u8,
+                                    (old[2] as f32 * 0.25) as u8,
                                     255,
                                 ]),
                             );
@@ -415,44 +411,36 @@ pub fn apply_event_decorations(canvas: &mut RgbaImage, event: EventTheme, shot_i
         }
     }
 
-    // Floating Stickers & Emojis
-    match event {
-        EventTheme::Anniversary | EventTheme::Romantic => {
-            // Floating Heart Stickers
-            let hearts = [
-                (120.0f32, 280.0f32, 38.0f32),
-                (960.0, 320.0, 30.0),
-                (100.0, 1640.0, 34.0),
-                (950.0, 1680.0, 44.0),
-            ];
-            for &(hx, hy, hr) in &hearts {
-                draw_mini_heart(canvas, hx, hy, hr, [255, 80, 130]);
-            }
+    // Floating Stickers & Emojis matching template theme
+    if sticker_theme == "hearts" || matches!(event, EventTheme::Anniversary | EventTheme::Romantic) {
+        let hearts = [
+            (120.0f32, 280.0f32, 38.0f32),
+            (960.0, 320.0, 30.0),
+            (100.0, 1640.0, 34.0),
+            (950.0, 1680.0, 44.0),
+        ];
+        for &(hx, hy, hr) in &hearts {
+            draw_mini_heart(canvas, hx, hy, hr, [255, 80, 130]);
         }
-        EventTheme::Birthday | EventTheme::Party => {
-            // Confetti dots & celebration sparkles
-            let confetti = [
-                (100u32, 260u32, 10u32, [255, 215, 0]),
-                (160, 320, 7, [255, 90, 160]),
-                (940, 260, 9, [0, 220, 255]),
-                (980, 330, 12, [140, 255, 100]),
-                (90, 1620, 11, [255, 100, 180]),
-                (140, 1690, 8, [255, 225, 50]),
-                (940, 1640, 12, [255, 130, 40]),
-                (980, 1710, 8, [0, 230, 255]),
-            ];
-            for &(cx, cy, cr, col) in &confetti {
-                draw_circle_particle(canvas, cx, cy, cr, col);
-            }
-            // Sparkles
-            draw_sparkle_cross(canvas, 130, 240, 24, [255, 240, 180]);
-            draw_sparkle_cross(canvas, 950, 290, 20, [255, 240, 180]);
+    } else if sticker_theme == "confetti" || matches!(event, EventTheme::Birthday | EventTheme::Party) {
+        let confetti = [
+            (100u32, 260u32, 10u32, [255, 215, 0]),
+            (160, 320, 7, [255, 90, 160]),
+            (940, 260, 9, [0, 220, 255]),
+            (980, 330, 12, [140, 255, 100]),
+            (90, 1620, 11, [255, 100, 180]),
+            (140, 1690, 8, [255, 225, 50]),
+            (940, 1640, 12, [255, 130, 40]),
+            (980, 1710, 8, [0, 230, 255]),
+        ];
+        for &(cx, cy, cr, col) in &confetti {
+            draw_circle_particle(canvas, cx, cy, cr, col);
         }
-        EventTheme::Travel => {
-            draw_sparkle_cross(canvas, 120, 260, 22, [255, 255, 255]);
-            draw_sparkle_cross(canvas, 960, 260, 22, [255, 255, 255]);
-        }
-        EventTheme::General => {}
+        draw_sparkle_cross(canvas, 130, 240, 24, [255, 240, 180]);
+        draw_sparkle_cross(canvas, 950, 290, 20, [255, 240, 180]);
+    } else {
+        draw_sparkle_cross(canvas, 120, 260, 22, [255, 255, 255]);
+        draw_sparkle_cross(canvas, 960, 260, 22, [255, 255, 255]);
     }
 }
 

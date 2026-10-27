@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
@@ -10,7 +11,7 @@ pub enum Engine {
     MltOnly,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum, Default, Serialize, Deserialize)]
 pub enum EventTheme {
     #[default]
     General,
@@ -45,7 +46,7 @@ impl EventTheme {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum, Default, Serialize, Deserialize)]
 pub enum MotionMode {
     #[default]
     DynamicMix,
@@ -89,6 +90,7 @@ pub struct Config {
     pub motion: MotionMode,
     pub title: Option<String>,
     pub stickers: bool,
+    pub template_id: Option<String>,
 }
 
 impl Config {
@@ -123,7 +125,7 @@ impl Analysis {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Layout {
     /// Smart-cropped to fill the whole 9:16 frame
     Fill,

@@ -223,6 +223,194 @@
     margin-top: 5px;
   }
 
+  /* Two-Tone Title Opening Hook Preview */
+  .title-split-box {
+    margin-top: 8px;
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .title-split-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.8px;
+    white-space: nowrap;
+  }
+  .title-split-render {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .title-split-line1 {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: rgba(255, 255, 255, 0.85);
+    text-transform: uppercase;
+  }
+  .title-split-line2 {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #f59e0b;
+    text-transform: uppercase;
+    transition: color 0.3s ease;
+  }
+
+  /* AI Template Cards */
+  .template-section {
+    margin-bottom: 26px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-md);
+  }
+  .template-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .template-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    background: rgba(121, 82, 245, 0.15);
+    border: 1px solid rgba(121, 82, 245, 0.3);
+    color: #c4b5fd;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .template-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  @media (max-width: 768px) {
+    .template-grid { grid-template-columns: 1fr; }
+  }
+  .template-card {
+    position: relative;
+    background: rgba(18, 20, 29, 0.85);
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .template-card:hover {
+    border-color: rgba(121, 82, 245, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+  .template-card.active {
+    border-color: var(--primary);
+    background: rgba(121, 82, 245, 0.12);
+    box-shadow: 0 0 24px var(--primary-glow);
+  }
+  .template-rank {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.07);
+    color: #fff;
+    margin-bottom: 8px;
+    align-self: flex-start;
+  }
+  .template-rank.best {
+    background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+    color: #fff;
+  }
+  .template-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .template-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.35;
+    margin-bottom: 12px;
+    flex-grow: 1;
+  }
+  .template-palette {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .palette-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+  }
+  .template-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .template-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+  }
+  .template-reason {
+    font-size: 11px;
+    color: #34d399;
+    background: rgba(16, 185, 129, 0.08);
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .btn-cycle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-sm);
+    color: var(--text-main);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-cycle:hover {
+    background: rgba(121, 82, 245, 0.1);
+    border-color: var(--primary);
+    color: #fff;
+  }
+
   /* Upload Dropzone */
   .dropzone {
     border: 2px dashed rgba(121, 82, 245, 0.4);
@@ -686,7 +874,16 @@
     <div class="title-group">
       <label class="input-label" for="customTitle">Banner Greeting / Title (Optional)</label>
       <input type="text" id="customTitle" name="title" class="text-input" placeholder="e.g. Happy Birthday Maya! 🎂🎉">
-      <div class="input-hint">Leave blank to use the default occasion greeting.</div>
+      
+      <!-- Two-Tone Dynamic Hook Title Preview -->
+      <div class="title-split-box" id="titlePreviewBox">
+        <div class="title-split-label">Opening Hook:</div>
+        <div class="title-split-render">
+          <div class="title-split-line1" id="previewLine1">HAPPY BIRTHDAY</div>
+          <div class="title-split-line2" id="previewLine2">CELEBRATION 🎉</div>
+        </div>
+      </div>
+      <div class="input-hint">ReelForge automatically divides the greeting and highlights the hero name in the template accent color!</div>
     </div>
 
     <!-- Step 3: Photos Dropzone -->
@@ -709,9 +906,34 @@
       <div class="preview-grid" id="previewGrid"></div>
     </div>
 
+    <!-- Step 3: AI Curated Extraordinary Templates (Top 3 of 48 in Background) -->
+    <div class="template-section" id="templateSection">
+      <div class="template-header">
+        <div class="section-label" style="margin-bottom: 0;">
+          <span class="num">3</span> AI Matched Templates
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="template-badge" id="templateBadge">🤖 AI Analyzed • Top 3 of 48</span>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+        Evaluated from your photo sharpness, aspect ratios, occasion & title. Select your favorite or cycle the next batch:
+      </p>
+
+      <input type="hidden" id="selectedTemplateId" name="template_id" value="">
+
+      <div class="template-grid" id="templateGrid">
+        <!-- Rendered dynamically by JavaScript -->
+      </div>
+
+      <button type="button" id="cycleTemplatesBtn" class="btn-cycle">
+        <span>🔄</span> Show Next 3 Templates (Cycle through 48 templates)
+      </button>
+    </div>
+
     <!-- Step 4: Motion Style -->
     <div class="section-label" style="margin-top: 24px;">
-      <span class="num">3</span> Motion & Pacing Style
+      <span class="num">4</span> Motion & Pacing Style
     </div>
     <div class="motion-grid">
       <label class="motion-card active">
@@ -842,6 +1064,27 @@
   const userEmailInput = document.getElementById('userEmail');
   const savedUserBadge = document.getElementById('savedUserBadge');
 
+  // Title Preview & Template Elements
+  const previewLine1 = document.getElementById('previewLine1');
+  const previewLine2 = document.getElementById('previewLine2');
+  const templateGrid = document.getElementById('templateGrid');
+  const templateBadge = document.getElementById('templateBadge');
+  const cycleTemplatesBtn = document.getElementById('cycleTemplatesBtn');
+  const selectedTemplateInput = document.getElementById('selectedTemplateId');
+
+  const PALETTE_CONFIG = {
+    GoldLuxury: { primary: '#ffd700', secondary: '#fff0b4', hex: '#ffd700' },
+    RoseElegance: { primary: '#ff69b4', secondary: '#ffdceb', hex: '#ff69b4' },
+    RubyRomantic: { primary: '#eb2d55', secondary: '#ffa0b4', hex: '#ff3366' },
+    CyberParty: { primary: '#a855f7', secondary: '#3b82f6', hex: '#a855f7' },
+    NeonSunset: { primary: '#f97316', secondary: '#ec4899', hex: '#ff7733' },
+    TropicalAzure: { primary: '#0ea5e9', secondary: '#14b8a6', hex: '#00e5ff' },
+    VintagePolaroid: { primary: '#f5f5f0', secondary: '#d2b48c', hex: '#ffffff' },
+    EmeraldPrestige: { primary: '#10b981', secondary: '#34d399', hex: '#10b981' },
+    VelvetMidnight: { primary: '#8b5cf6', secondary: '#c084fc', hex: '#c084fc' },
+    WarmSunlight: { primary: '#fbbf24', secondary: '#f59e0b', hex: '#fbbf24' }
+  };
+
   // Creator Profile Persistence
   const savedUser = localStorage.getItem('reelforge_user_id');
   if (savedUser) {
@@ -871,14 +1114,85 @@
     general: "e.g. Special Moments & Memories ✨"
   };
 
+  function getActiveEvent() {
+    const activeCard = document.querySelector('.event-card.active');
+    return activeCard ? activeCard.dataset.event : 'general';
+  }
+
+  // Client-side title splitting for dynamic 2-line opening hook
+  function splitTitleClient(raw, eventTheme) {
+    const clean = (raw || '').trim();
+    if (!clean) {
+      const defaults = {
+        birthday: ['HAPPY BIRTHDAY', 'CELEBRATION 🎉'],
+        anniversary: ['HAPPY ANNIVERSARY', 'TOGETHER FOREVER ❤️'],
+        romantic: ['FOREVER & ALWAYS', 'MY SWEET LOVE 💖'],
+        party: ['WEEKEND VIBES', 'PARTY TIME 🍾'],
+        travel: ['WANDERLUST', 'TRAVEL MEMORIES ✈️'],
+        general: ['SPECIAL MOMENTS', 'MEMORIES ✨']
+      };
+      return defaults[eventTheme] || defaults.general;
+    }
+    const lower = clean.toLowerCase();
+    const prefixes = [
+      'happy birthday', 'happy anniversary', 'happy bday',
+      'forever and always', 'forever & always', 'celebrating',
+      'trip to', 'vacation in', 'memories of'
+    ];
+    for (const p of prefixes) {
+      if (lower.startsWith(p)) {
+        const rem = clean.slice(p.length).replace(/^[:\-,! ]+/, '').trim();
+        if (rem) return [p.toUpperCase(), rem.toUpperCase()];
+      }
+    }
+    const delims = [':', '-', '|', ','];
+    for (const d of delims) {
+      if (clean.includes(d)) {
+        const parts = clean.split(d);
+        if (parts[0].trim() && parts[1].trim()) {
+          return [parts[0].trim().toUpperCase(), parts.slice(1).join(' ').trim().toUpperCase()];
+        }
+      }
+    }
+    const words = clean.split(/\s+/);
+    if (words.length >= 3) {
+      return [words.slice(0, 2).join(' ').toUpperCase(), words.slice(2).join(' ').toUpperCase()];
+    } else if (words.length === 2) {
+      return [words[0].toUpperCase(), words[1].toUpperCase()];
+    }
+    return ['MOMENTS', clean.toUpperCase()];
+  }
+
+  let activeAccentHex = '#f59e0b';
+  function updateTitlePreview(customHex) {
+    if (customHex) activeAccentHex = customHex;
+    const ev = getActiveEvent();
+    const [line1, line2] = splitTitleClient(customTitle.value, ev);
+    previewLine1.textContent = line1;
+    previewLine2.textContent = line2;
+    previewLine2.style.color = activeAccentHex;
+  }
+
+  let debounceTimer = null;
+  customTitle.addEventListener('input', () => {
+    updateTitlePreview();
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      fetchAndRenderTemplates(0);
+    }, 350);
+  });
+
   eventCards.forEach(card => {
     card.addEventListener('click', () => {
       eventCards.forEach(c => c.classList.remove('active'));
       card.classList.add('active');
-      const val = card.querySelector('input').value;
+      card.querySelector('input').checked = true;
+      const val = card.dataset.event;
       if (eventPlaceholders[val]) {
         customTitle.placeholder = eventPlaceholders[val];
       }
+      updateTitlePreview();
+      fetchAndRenderTemplates(0);
     });
   });
 
@@ -907,6 +1221,7 @@
     if (e.target.files) {
       selectedFiles = Array.from(e.target.files);
       renderPreviews();
+      fetchAndRenderTemplates(0);
     }
   });
 
@@ -946,6 +1261,141 @@
       previewGrid.appendChild(more);
     }
   }
+
+  // Template Fetching & Cycling Engine
+  let currentTemplateOffset = 0;
+  let totalTemplatesCount = 48;
+
+  async function fetchAndRenderTemplates(offset = 0) {
+    currentTemplateOffset = offset;
+    const ev = getActiveEvent();
+    const titleVal = customTitle.value.trim();
+
+    try {
+      let respData = null;
+      if (selectedFiles && selectedFiles.length > 0) {
+        // Send multipart with photos to compute real aspect ratios & sharpness
+        const fd = new FormData();
+        fd.append('event', ev);
+        fd.append('title', titleVal);
+        fd.append('offset', offset.toString());
+        fd.append('limit', '3');
+        selectedFiles.slice(0, 8).forEach(f => fd.append('photos', f));
+        
+        const res = await fetch('/api/recommend-templates', {
+          method: 'POST',
+          body: fd
+        });
+        if (res.ok) {
+          respData = await res.json();
+        }
+      }
+
+      if (!respData) {
+        const params = new URLSearchParams({
+          event: ev,
+          title: titleVal,
+          offset: offset.toString(),
+          limit: '3'
+        });
+        const res = await fetch(`/api/templates?${params.toString()}`);
+        if (res.ok) {
+          respData = await res.json();
+        }
+      }
+
+      if (!respData || !respData.templates || respData.templates.length === 0) return;
+
+      totalTemplatesCount = respData.total || 48;
+      renderTemplateCards(respData.templates, respData.offset, totalTemplatesCount);
+    } catch (e) {
+      console.warn("Could not fetch template recommendations:", e);
+    }
+  }
+
+  function renderTemplateCards(scoredList, offset, total) {
+    templateGrid.innerHTML = '';
+    const startNum = offset + 1;
+    const endNum = Math.min(offset + scoredList.length, total);
+    templateBadge.textContent = `🤖 AI Analyzed • Top ${startNum}–${endNum} of ${total}`;
+
+    let currentSelectedId = selectedTemplateInput.value;
+    let matchFound = scoredList.some(s => s.template.id === currentSelectedId);
+    if (!matchFound && scoredList.length > 0) {
+      selectedTemplateInput.value = scoredList[0].template.id;
+      currentSelectedId = scoredList[0].template.id;
+    }
+
+    const rankMedals = ['🥇', '🥈', '🥉'];
+
+    scoredList.forEach((scored, idx) => {
+      const t = scored.template;
+      const isSelected = t.id === currentSelectedId;
+      const palette = PALETTE_CONFIG[t.palette] || { primary: '#ffd700', secondary: '#fff0b4', hex: '#ffd700' };
+
+      const card = document.createElement('div');
+      card.className = `template-card ${isSelected ? 'active' : ''}`;
+      card.dataset.id = t.id;
+
+      const medal = rankMedals[idx] || `#${offset + idx + 1}`;
+      const isTop = offset === 0 && idx === 0;
+
+      card.innerHTML = `
+        <div>
+          <div class="template-rank ${isTop ? 'best' : ''}">
+            <span>${medal}</span>
+            <span>${scored.match_score}% Match</span>
+            ${isTop ? '<span>• Best Match</span>' : ''}
+          </div>
+          <div class="template-title">${t.name}</div>
+          <div class="template-desc">${t.description}</div>
+        </div>
+
+        <div>
+          <div class="template-palette">
+            <span class="palette-dot" style="background: ${palette.primary};"></span>
+            <span class="palette-dot" style="background: ${palette.secondary};"></span>
+            <span style="font-size: 11px; color: var(--text-muted); margin-left: 2px;">${t.palette}</span>
+          </div>
+
+          <div class="template-tags">
+            ${(t.layouts || []).map(l => `<span class="template-tag">${l}</span>`).join('')}
+            <span class="template-tag" style="color: #a78bfa;">${t.motion}</span>
+          </div>
+
+          <div class="template-reason">
+            <span>✨</span>
+            <span>${scored.match_reason}</span>
+          </div>
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.template-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        selectedTemplateInput.value = t.id;
+        updateTitlePreview(palette.hex);
+      });
+
+      if (isSelected) {
+        updateTitlePreview(palette.hex);
+      }
+
+      templateGrid.appendChild(card);
+    });
+  }
+
+  cycleTemplatesBtn.addEventListener('click', () => {
+    let nextOffset = currentTemplateOffset + 3;
+    if (nextOffset >= totalTemplatesCount) {
+      nextOffset = 0;
+    }
+    fetchAndRenderTemplates(nextOffset);
+  });
+
+  // Initialize templates & title preview on boot
+  updateTitlePreview();
+  fetchAndRenderTemplates(0);
 
   // Progress Stage Simulation during generation
   let progressInterval = null;
