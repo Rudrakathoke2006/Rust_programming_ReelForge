@@ -1,13 +1,14 @@
 use crate::analytics::AnalyticsTracker;
 use crate::pipeline;
-use crate::types::{Config, Engine};
+use crate::types::{Config, Engine, EventTheme};
 use axum::{
-    extract::{DefaultBodyLimit, Multipart},
+    extract::{DefaultBodyLimit, Multipart, Query},
     http::{header, StatusCode},
     response::{Html, IntoResponse, Response},
     routing::{get, post},
     Json, Router,
 };
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -26,6 +27,8 @@ pub async fn serve(port: u16) -> anyhow::Result<()> {
                 async move { Json(t.get_summary()) }
             }
         }))
+        .route("/api/templates", get(get_templates))
+        .route("/api/recommend-templates", post(recommend_templates))
         .route("/generate", post({
             let t = tracker.clone();
             move |mp| generate(mp, t)
@@ -43,6 +46,108 @@ fn err(e: impl std::fmt::Display) -> (StatusCode, String) {
     (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
 }
 
+#[derive(Deserialize)]
+pub struct TemplateQuery {
+    pub event: Option<String>,
+    pub title: Option<String>,
+    pub offset: Option<usize>,
+    pub limit: Option<usize>,
+}
+
+#[derive(Serialize)]
+pub struct TemplatesResponse {
+    pub total: usize,
+    pub offset: usize,
+    pub limit: usize,
+    pub templates: Vec<crate::templates::ScoredTemplate>,
+}
+
+async fn get_templates(Query(q): Query<TemplateQuery>) -> Json<TemplatesResponse> {
+    let event = q.event.as_deref().map(EventTheme::from_str).unwrap_or(EventTheme::General);
+    let title = q.title.as_deref().unwrap_or("");
+    let offset = q.offset.unwrap_or(0);
+    let limit = q.limit.unwrap_or(3).clamp(1, 48);
+
+    let scored = crate::templates::score_templates(event, &[], title);
+    let total = scored.len();
+    let offset_clamped = if total == 0 { 0 } else { offset % total };
+    let paged = scored.into_iter().skip(offset_clamped).take(limit).collect();
+
+    Json(TemplatesResponse {
+        total,
+        offset: offset_clamped,
+        limit,
+        templates: paged,
+    })
+}
+
+async fn recommend_templates(mut mp: Multipart) -> Result<Json<TemplatesResponse>, (StatusCode, String)> {
+    let job = std::env::temp_dir().join(format!("reelforge-rec-{}", uuid::Uuid::new_v4()));
+    let upload = job.join("uploads");
+    std::fs::create_dir_all(&upload).map_err(err)?;
+
+    let mut event = EventTheme::General;
+    let mut title = String::new();
+    let mut offset = 0usize;
+    let mut limit = 3usize;
+    let mut photos: Vec<PathBuf> = Vec::new();
+
+    while let Some(field) = mp.next_field().await.map_err(err)? {
+        let name = field.name().unwrap_or("").to_string();
+        match name.as_str() {
+            "event" => {
+                let txt = field.text().await.unwrap_or_default();
+                event = EventTheme::from_str(&txt);
+            }
+            "title" => {
+                title = field.text().await.unwrap_or_default();
+            }
+            "offset" => {
+                if let Ok(v) = field.text().await.unwrap_or_default().trim().parse::<usize>() {
+                    offset = v;
+                }
+            }
+            "limit" => {
+                if let Ok(v) = field.text().await.unwrap_or_default().trim().parse::<usize>() {
+                    limit = v.clamp(1, 48);
+                }
+            }
+            "photos" => {
+                let fname = field.file_name().unwrap_or("photo.jpg").to_string();
+                let data = field.bytes().await.map_err(err)?;
+                if !data.is_empty() && photos.len() < 12 {
+                    let p = upload.join(format!("{:04}_{}", photos.len(), sanitize(&fname)));
+                    if std::fs::write(&p, &data).is_ok() {
+                        photos.push(p);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let mut analyses = Vec::new();
+    for p in &photos {
+        if let Ok(a) = crate::analyze::analyze(p) {
+            analyses.push(a);
+        }
+    }
+
+    let _ = std::fs::remove_dir_all(&job);
+
+    let scored = crate::templates::score_templates(event, &analyses, &title);
+    let total = scored.len();
+    let offset_clamped = if total == 0 { 0 } else { offset % total };
+    let paged = scored.into_iter().skip(offset_clamped).take(limit).collect();
+
+    Ok(Json(TemplatesResponse {
+        total,
+        offset: offset_clamped,
+        limit,
+        templates: paged,
+    }))
+}
+
 async fn generate(mut mp: Multipart, tracker: Arc<AnalyticsTracker>) -> Result<Response, (StatusCode, String)> {
     let job = std::env::temp_dir().join(format!("reelforge-{}", uuid::Uuid::new_v4()));
     let upload = job.join("uploads");
@@ -56,6 +161,7 @@ async fn generate(mut mp: Multipart, tracker: Arc<AnalyticsTracker>) -> Result<R
     let mut motion = crate::types::MotionMode::DynamicMix;
     let mut title: Option<String> = None;
     let mut stickers = true;
+    let mut template_id: Option<String> = None;
 
     while let Some(field) = mp.next_field().await.map_err(err)? {
         let name = field.name().unwrap_or("").to_string();
@@ -109,6 +215,12 @@ async fn generate(mut mp: Multipart, tracker: Arc<AnalyticsTracker>) -> Result<R
                 let txt = field.text().await.unwrap_or_default().to_lowercase();
                 stickers = txt != "false" && txt != "0";
             }
+            "template" | "template_id" => {
+                let txt = field.text().await.unwrap_or_default().trim().to_string();
+                if !txt.is_empty() {
+                    template_id = Some(txt);
+                }
+            }
             _ => {}
         }
     }
@@ -136,6 +248,7 @@ async fn generate(mut mp: Multipart, tracker: Arc<AnalyticsTracker>) -> Result<R
         motion,
         title: title.clone(),
         stickers,
+        template_id,
     };
     tokio::task::spawn_blocking(move || pipeline::run(&cfg))
         .await

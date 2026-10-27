@@ -5,6 +5,7 @@ mod pipeline;
 mod render_ffmpeg;
 mod render_mlt;
 mod server;
+mod templates;
 mod types;
 
 use clap::{Parser, Subcommand};
@@ -59,6 +60,9 @@ enum Cmd {
         /// Include event decorative stickers & emojis
         #[arg(long, default_value_t = true)]
         stickers: bool,
+        /// Optional specific template ID
+        #[arg(long)]
+        template: Option<String>,
     },
     /// Start the web UI (upload photos in the browser)
     Serve {
@@ -85,6 +89,7 @@ async fn main() -> anyhow::Result<()> {
             motion,
             title,
             stickers,
+            template,
         } => {
             let shot = bpm.map(pipeline::shot_secs_from_bpm).unwrap_or(shot_secs);
             let cfg = Config {
@@ -102,6 +107,7 @@ async fn main() -> anyhow::Result<()> {
                 motion,
                 title,
                 stickers,
+                template_id: template,
             };
             pipeline::run(&cfg)
         }
