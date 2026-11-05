@@ -6,7 +6,7 @@ description = "Photos in, vertical reel out. Smart-crop + shape layouts + FFmpeg
 
 [dependencies]
 anyhow = "1"
-clap = { version = "4", features = ["derive"] }
+clap = { version = "4", features = ["derive", "env"] }
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "bmp", "tiff"] }
 walkdir = "2"
 axum = { version = "0.7", features = ["multipart"] }
