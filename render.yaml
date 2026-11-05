@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: reelforge
+    runtime: rust
+    plan: free
+    branch: main
+    buildCommand: cargo build --release
+    startCommand: ./target/release/reelforge serve
+    healthCheckPath: /login
+    envVars:
+      - key: RUST_LOG
+        value: info

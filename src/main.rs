@@ -67,7 +67,8 @@ enum Cmd {
     },
     /// Start the web UI (upload photos in the browser)
     Serve {
-        #[arg(short, long, default_value_t = 8080)]
+        /// Bind port (uses $PORT on Render/Heroku if set)
+        #[arg(short, long, env = "PORT", default_value_t = 8080)]
         port: u16,
     },
 }
