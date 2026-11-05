@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReelForge — Secure Sign-In Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-base: #090d16;
+    --card-bg: #121722;
+    --card-hover: #182030;
+    --card-border: #1e293b;
+    --card-border-focus: #3b82f6;
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --accent-admin: #f59e0b;
+    --accent-user: #3b82f6;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --text-dim: #64748b;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --danger: #ef4444;
+    --success: #10b981;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-base);
+    color: var(--text-main);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+
+  .login-container {
+    width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
+  }
+
+  /* Brand Header */
+  .brand-header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .brand-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: #1e293b;
+    border: 1px solid #334155;
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+  .brand-title {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    color: #ffffff;
+  }
+  .brand-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* Two Login Types Switcher at Top */
+  .portal-switcher {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    background: #0d121c;
+    padding: 6px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--card-border);
+    margin-bottom: 20px;
+  }
+  .portal-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .portal-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.04);
+  }
+  .portal-btn.active {
+    background: var(--card-bg);
+    color: #ffffff;
+    border-color: var(--card-border);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+  .portal-btn.active.admin-mode {
+    border-color: rgba(245, 158, 11, 0.4);
+    color: #fbbf24;
+  }
+  .portal-btn.active.user-mode {
+    border-color: rgba(59, 130, 246, 0.4);
+    color: #60a5fa;
+  }
+
+  /* Main Card */
+  .auth-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    padding: 28px 24px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  }
+
+  .portal-header {
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .portal-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .portal-tag.admin {
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #f59e0b;
+  }
+  .portal-tag.user {
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #60a5fa;
+  }
+
+  .portal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+  }
+  .portal-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  /* Sub-tabs for User (Sign In vs Sign Up) */
+  .sub-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .sub-tab {
+    padding: 8px 4px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .sub-tab:hover {
+    color: var(--text-muted);
+  }
+  .sub-tab.active {
+    color: #ffffff;
+    border-bottom-color: var(--primary);
+  }
+
+  /* Form Elements */
+  .form-group {
+    margin-bottom: 16px;
+  }
+  .form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .input-wrap {
+    position: relative;
+  }
+  .form-input {
+    width: 100%;
+    background: #090d16;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 11px 13px;
+    font-family: inherit;
+    font-size: 14px;
+    color: #ffffff;
+    transition: all 0.15s ease;
+  }
+  .form-input:focus {
+    outline: none;
+    border-color: var(--card-border-focus);
+    box-shadow: 0 0 0 1px var(--card-border-focus);
+  }
+  .toggle-pwd {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .toggle-pwd:hover {
+    color: var(--text-muted);
+  }
+
+  /* Primary Action Button */
+  .btn-submit {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+    background: var(--primary);
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 20px;
+  }
+  .btn-submit:hover {
+    background: var(--primary-hover);
+  }
+  .btn-submit.admin-btn {
+    background: #d97706;
+  }
+  .btn-submit.admin-btn:hover {
+    background: #b45309;
+  }
+
+  /* Demo / Convenience Shortcut */
+  .demo-actions {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .demo-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .demo-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+  }
+
+  /* Alert / Message */
+  .alert {
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 16px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.4;
+  }
+  .alert.error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+  }
+  .alert.success {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #6ee7b7;
+  }
+  .alert.info {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #93c5fd;
+  }
+
+  /* Security Footer Notice */
+  .security-footer {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+</style>
+</head>
+<body>
+
+<div class="login-container">
+  <!-- Brand Header -->
+  <div class="brand-header">
+    <div class="brand-logo">🎬</div>
+    <div class="brand-title">ReelForge Platform</div>
+    <div class="brand-sub">Vertical Video Engine & Intelligence Studio</div>
+  </div>
+
+  <!-- Top 2-Type Login Switcher -->
+  <div class="portal-switcher">
+    <button type="button" class="portal-btn user-mode active" id="btnUserPortal" onclick="switchPortal('user')">
+      <span>👤</span> Creator / User
+    </button>
+    <button type="button" class="portal-btn admin-mode" id="btnAdminPortal" onclick="switchPortal('admin')">
+      <span>🛡️</span> Administrator
+    </button>
+  </div>
+
+  <!-- Main Auth Card -->
+  <div class="auth-card">
+    
+    <!-- Status Alert Box -->
+    <div id="authAlert" class="alert">
+      <span id="alertIcon">⚠️</span>
+      <span id="alertMsg">Alert message</span>
+    </div>
+
+    <!-- ==================== SECTION 1: CREATOR / USER LOGIN & REGISTER ==================== -->
+    <div id="userSection">
+      <div class="portal-header">
+        <span class="portal-tag user">👤 Creator Portal</span>
+        <div class="portal-title">Create an account or sign in</div>
+        <div class="portal-desc">
+          Sign up with your email to access the Studio. Anyone can register — no invite needed.
+        </div>
+      </div>
+
+      <!-- Sub Tabs: Sign Up first, then Sign In -->
+      <div class="sub-tabs">
+        <button type="button" class="sub-tab active" id="tabUserSignUp" onclick="switchUserTab('signup')">Create Account (Sign Up)</button>
+        <button type="button" class="sub-tab" id="tabUserSignIn" onclick="switchUserTab('signin')">Sign In</button>
+      </div>
+
+      <!-- User Sign Up Form -->
+      <form id="userSignUpForm" onsubmit="handleUserSignUp(event)">
+        <div class="form-group">
+          <label class="form-label" for="signupName">Full Name / Creator Handle</label>
+          <div class="input-wrap">
+            <input type="text" id="signupName" class="form-input" placeholder="e.g. Alex Rivera" required minlength="2">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="signupEmail">Email Address</label>
+          <div class="input-wrap">
+            <input type="email" id="signupEmail" class="form-input" placeholder="you@example.com" required autocomplete="username">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="signupPassword">Create Password</label>
+          <div class="input-wrap">
+            <input type="password" id="signupPassword" class="form-input" placeholder="At least 6 characters" required minlength="6" autocomplete="new-password">
+            <button type="button" class="toggle-pwd" onclick="togglePassword('signupPassword', this)">👁️</button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit">
+          <span>Create Account & Start Creating →</span>
+        </button>
+
+        <div class="demo-actions">
+          <span style="font-size: 11px; color: var(--text-dim);">Already have an account?</span>
+          <button type="button" class="demo-btn" onclick="switchUserTab('signin')">Go to Sign In</button>
+        </div>
+      </form>
+
+      <!-- User Sign In Form -->
+      <form id="userSignInForm" onsubmit="handleUserSignIn(event)" style="display: none;">
+        <div class="form-group">
+          <label class="form-label" for="userEmail">Email</label>
+          <div class="input-wrap">
+            <input type="email" id="userEmail" class="form-input" placeholder="you@example.com" required autocomplete="username">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="userPassword">Password</label>
+          <div class="input-wrap">
+            <input type="password" id="userPassword" class="form-input" placeholder="Enter your password" required autocomplete="current-password">
+            <button type="button" class="toggle-pwd" onclick="togglePassword('userPassword', this)">👁️</button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit" id="userSubmitBtn">
+          <span>Sign In to Reel Studio →</span>
+        </button>
+
+        <div class="demo-actions">
+          <span style="font-size: 11px; color: var(--text-dim);">New here?</span>
+          <button type="button" class="demo-btn" onclick="switchUserTab('signup')">Create an account</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ==================== SECTION 2: ADMINISTRATOR LOGIN ==================== -->
+    <div id="adminSection" style="display: none;">
+      <div class="portal-header">
+        <span class="portal-tag admin">🛡️ Superuser Access Only</span>
+        <div class="portal-title">Administrator Sign-In</div>
+        <div class="portal-desc">
+          Authorizes access to Creator Analytics & User Intelligence Hub (`/admin`).
+        </div>
+      </div>
+
+      <form id="adminForm" onsubmit="handleAdminSubmit(event)">
+        <div class="form-group">
+          <label class="form-label" for="adminEmail">Admin Email</label>
+          <div class="input-wrap">
+            <input type="email" id="adminEmail" class="form-input" placeholder="Admin email" required autocomplete="username">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="adminPassword">Master Password</label>
+          <div class="input-wrap">
+            <input type="password" id="adminPassword" class="form-input" placeholder="Enter administrator password" required autocomplete="current-password">
+            <button type="button" class="toggle-pwd" onclick="togglePassword('adminPassword', this)">👁️</button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit admin-btn" id="adminSubmitBtn">
+          <span>Authorize & Enter Admin Hub →</span>
+        </button>
+      </form>
+    </div>
+
+  </div>
+
+  <div class="security-footer">
+    ReelForge Studio Engine &bull; Protected Access &bull; v1.2.0
+  </div>
+</div>
+
+<script>
+  // Admin gate (no demo fill / no credential shortcuts in the UI)
+  const ADMIN_EMAIL = "rudrakathoke1405@gmail.com";
+  const ADMIN_PASS = "Rudra@2006*14";
+  const USERS_KEY = 'reelforge_registered_users';
+  const AUTH_KEY = 'reelforge_auth';
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('admin') === 'required') {
+      showAlert('Administrator login is required to access the User Intelligence Hub.', 'error');
+      switchPortal('admin');
+    } else if (params.get('logged_out')) {
+      showAlert('You have been successfully signed out. Sign up or sign in to continue.', 'info');
+      switchPortal('user');
+      switchUserTab('signin');
+    } else if (params.get('mode') === 'signin') {
+      switchPortal('user');
+      switchUserTab('signin');
+    } else if (params.get('mode') === 'signup') {
+      switchPortal('user');
+      switchUserTab('signup');
+    } else {
+      switchPortal('user');
+      switchUserTab('signup');
+    }
+
+    const existing = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null');
+    if (existing && existing.email) {
+      showAlert(`Signed in as ${existing.email}. Continue to Studio or switch accounts below.`, 'info');
+    }
+  });
+
+  function showAlert(msg, type = 'error') {
+    const el = document.getElementById('authAlert');
+    const msgEl = document.getElementById('alertMsg');
+    const iconEl = document.getElementById('alertIcon');
+    el.className = `alert ${type}`;
+    el.style.display = 'flex';
+    msgEl.textContent = msg;
+    iconEl.textContent = type === 'error' ? '🚫' : (type === 'success' ? '✓' : 'ℹ️');
+  }
+
+  function hideAlert() {
+    document.getElementById('authAlert').style.display = 'none';
+  }
+
+  function switchPortal(portal) {
+    hideAlert();
+    const btnAdmin = document.getElementById('btnAdminPortal');
+    const btnUser = document.getElementById('btnUserPortal');
+    const secAdmin = document.getElementById('adminSection');
+    const secUser = document.getElementById('userSection');
+
+    if (portal === 'admin') {
+      btnAdmin.classList.add('active');
+      btnUser.classList.remove('active');
+      secAdmin.style.display = 'block';
+      secUser.style.display = 'none';
+    } else {
+      btnUser.classList.add('active');
+      btnAdmin.classList.remove('active');
+      secUser.style.display = 'block';
+      secAdmin.style.display = 'none';
+    }
+  }
+
+  function switchUserTab(tab) {
+    hideAlert();
+    const tabSignIn = document.getElementById('tabUserSignIn');
+    const tabSignUp = document.getElementById('tabUserSignUp');
+    const formSignIn = document.getElementById('userSignInForm');
+    const formSignUp = document.getElementById('userSignUpForm');
+
+    if (tab === 'signin') {
+      tabSignIn.classList.add('active');
+      tabSignUp.classList.remove('active');
+      formSignIn.style.display = 'block';
+      formSignUp.style.display = 'none';
+    } else {
+      tabSignUp.classList.add('active');
+      tabSignIn.classList.remove('active');
+      formSignUp.style.display = 'block';
+      formSignIn.style.display = 'none';
+    }
+  }
+
+  function togglePassword(id, btn) {
+    const input = document.getElementById(id);
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = '🔒';
+    } else {
+      input.type = 'password';
+      btn.textContent = '👁️';
+    }
+  }
+
+  function loadUsers() {
+    try {
+      return JSON.parse(localStorage.getItem(USERS_KEY) || '{}') || {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function saveUsers(users) {
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  }
+
+  async function handleAdminSubmit(e) {
+    e.preventDefault();
+    hideAlert();
+
+    const email = document.getElementById('adminEmail').value.trim();
+    const pass = document.getElementById('adminPassword').value;
+
+    if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase() && pass === ADMIN_PASS) {
+      const auth = {
+        role: 'admin',
+        email: ADMIN_EMAIL,
+        name: 'Rudra Kathoke',
+        token: 'rf_adm_' + Date.now(),
+        loggedInAt: Date.now()
+      };
+      localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+      showAlert('Administrator verified. Redirecting...', 'success');
+
+      setTimeout(() => {
+        const params = new URLSearchParams(window.location.search);
+        const redirect = params.get('redirect') || '/admin';
+        window.location.href = redirect;
+      }, 600);
+    } else {
+      showAlert('Access denied: invalid administrator email or password.', 'error');
+    }
+  }
+
+  async function handleUserSignIn(e) {
+    e.preventDefault();
+    hideAlert();
+
+    const email = document.getElementById('userEmail').value.trim();
+    const pass = document.getElementById('userPassword').value;
+
+    if (!email || !pass) {
+      showAlert('Please enter your email and password.', 'error');
+      return;
+    }
+
+    const users = loadUsers();
+    const existing = users[email.toLowerCase()];
+
+    if (!existing) {
+      showAlert('No account found for this email. Create an account first.', 'error');
+      switchUserTab('signup');
+      document.getElementById('signupEmail').value = email;
+      return;
+    }
+
+    if (existing.password !== pass) {
+      showAlert('Incorrect password. Please try again.', 'error');
+      return;
+    }
+
+    const auth = {
+      role: 'user',
+      email: existing.email,
+      name: existing.name,
+      token: 'rf_usr_' + Date.now(),
+      loggedInAt: Date.now()
+    };
+    localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+    showAlert(`Welcome back, ${existing.name}! Opening Studio...`, 'success');
+
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 600);
+  }
+
+  async function handleUserSignUp(e) {
+    e.preventDefault();
+    hideAlert();
+
+    const name = document.getElementById('signupName').value.trim();
+    const email = document.getElementById('signupEmail').value.trim();
+    const pass = document.getElementById('signupPassword').value;
+
+    if (!name || !email || !pass) {
+      showAlert('All fields are required to register.', 'error');
+      return;
+    }
+
+    if (pass.length < 6) {
+      showAlert('Password must be at least 6 characters.', 'error');
+      return;
+    }
+
+    if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+      showAlert('This email is reserved for Administrator access. Use the Administrator tab.', 'error');
+      return;
+    }
+
+    const users = loadUsers();
+    if (users[email.toLowerCase()]) {
+      showAlert('An account with this email already exists. Please sign in.', 'error');
+      switchUserTab('signin');
+      document.getElementById('userEmail').value = email;
+      return;
+    }
+
+    users[email.toLowerCase()] = {
+      name: name,
+      email: email,
+      password: pass,
+      registeredAt: Date.now()
+    };
+    saveUsers(users);
+
+    const auth = {
+      role: 'user',
+      email: email,
+      name: name,
+      token: 'rf_usr_' + Date.now(),
+      loggedInAt: Date.now()
+    };
+    localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+    showAlert(`Account created for ${name}! Opening Studio...`, 'success');
+
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 700);
+  }
+</script>
+</body>
+</html>

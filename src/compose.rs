@@ -1,5 +1,5 @@
 use crate::analyze::{load, smart_crop};
-use crate::types::{Analysis, Config, EventTheme, Layout, MotionMode, Shot, ShotMotion};
+use crate::types::{Analysis, BannerStyle, Config, EventTheme, Layout, MotionMode, Shot, ShotMotion};
 use anyhow::Result;
 use image::{imageops, imageops::FilterType, DynamicImage, Rgba, RgbaImage};
 use std::path::PathBuf;
@@ -102,6 +102,34 @@ pub fn plan(cfg: &Config, photos: &[Analysis]) -> Vec<(Layout, Vec<usize>, ShotM
                         ShotMotion::ZoomOut
                     }
                 }
+                MotionMode::BeatDrop => {
+                    if shot_idx % 2 == 0 {
+                        ShotMotion::FastForward
+                    } else {
+                        ShotMotion::Boomerang
+                    }
+                }
+                MotionMode::WaveFlow => {
+                    if shot_idx % 2 == 0 {
+                        ShotMotion::ZoomIn
+                    } else {
+                        ShotMotion::ZoomOut
+                    }
+                }
+                MotionMode::TikTokSnap => {
+                    match shot_idx % 3 {
+                        0 => ShotMotion::Boomerang,
+                        1 => ShotMotion::FastForward,
+                        _ => ShotMotion::ZoomIn,
+                    }
+                }
+                MotionMode::VintageRoll => {
+                    if shot_idx % 2 == 0 {
+                        ShotMotion::ZoomOut
+                    } else {
+                        ShotMotion::ZoomIn
+                    }
+                }
                 MotionMode::DynamicMix => match shot_idx % 5 {
                     0 => ShotMotion::FastForward,
                     1 => ShotMotion::ZoomIn,
@@ -139,14 +167,17 @@ pub fn render_all(cfg: &Config, photos: &[Analysis]) -> Result<Vec<Shot>> {
     let planned = plan(cfg, photos);
     let total = planned.len();
 
+    // Preload photos once into RAM so we avoid repeated disk decode per shot
+    let loaded_images: Vec<DynamicImage> = photos.iter().map(|p| load(&p.path)).collect::<Result<_>>()?;
+
     for (n, (layout, idxs, motion)) in planned.into_iter().enumerate() {
-        let imgs: Vec<DynamicImage> = idxs.iter().map(|&i| load(&photos[i].path)).collect::<Result<_>>()?;
+        let imgs: Vec<DynamicImage> = idxs.iter().map(|&i| loaded_images[i].clone()).collect();
         let mut canvas = compose(cfg.width, cfg.height, layout, &imgs, border_color);
         if cfg.stickers {
-            apply_event_decorations(&mut canvas, cfg.event, active_template.sticker_theme, n, total);
+            apply_event_decorations(&mut canvas, cfg.event, active_template.sticker_theme, cfg.banner_style, n, total);
         }
-        let frame: PathBuf = cfg.work_dir.join("frames").join(format!("shot_{n:03}.png"));
-        canvas.save(&frame)?;
+        let frame: PathBuf = cfg.work_dir.join("frames").join(format!("shot_{n:03}.jpg"));
+        image::DynamicImage::ImageRgba8(canvas).to_rgb8().save_with_format(&frame, image::ImageFormat::Jpeg)?;
         println!("  shot {n:02}: {:?} [{:?}] <- {} photo(s)", layout, motion, idxs.len());
         out.push(Shot { layout, photos: idxs, frame, motion });
     }
@@ -261,7 +292,7 @@ pub fn compose(w: u32, h: u32, layout: Layout, imgs: &[DynamicImage], border_col
 
 fn fill(img: &DynamicImage, w: u32, h: u32) -> DynamicImage {
     let (x, y, cw, ch) = smart_crop(img, w as f32 / h as f32);
-    img.crop_imm(x, y, cw, ch).resize_exact(w, h, FilterType::Lanczos3)
+    img.crop_imm(x, y, cw, ch).resize_exact(w, h, FilterType::Triangle)
 }
 
 /// Cheap strong blur: shrink hard, enlarge smoothly, then darken a bit.
@@ -287,12 +318,32 @@ enum Shape {
 }
 
 /// Coverage 0..1 (anti-aliased) of `shape` at pixel (px,py) inside a size x size_h tile.
+/// Designed specifically to preserve human faces, portrait headroom, and hairstyles.
 fn coverage(shape: Shape, px: f32, py: f32, tw: f32, th: f32, inset: f32) -> f32 {
     let (cx, cy) = (tw / 2.0, th / 2.0);
     let (dx, dy) = (px - cx, py - cy);
     let sd = match shape {
         Shape::Circle => (dx * dx + dy * dy).sqrt() - tw.min(th) / 2.0,
-        Shape::Diamond => (dx.abs() / (tw / 2.0) + dy.abs() / (th / 2.0) - 1.0) * (tw.min(th) / 2.0) * 0.7071,
+        Shape::Diamond => {
+            // Face-Safe Crowned Faceted Gem Diamond:
+            // Slicing portraits into standard 45° rhombuses chops off foreheads, hair, and cheeks.
+            // Upper crown (dy < 0): maintains wide headroom (nx <= 1.0) with soft 45° chamfers.
+            // Lower pavilion (dy >= 0): tapers gracefully down to a brilliant diamond point.
+            let rx = (tw / 2.0) * 0.94;
+            let ry = (th / 2.0) * 0.94;
+            let nx = dx.abs() / rx;
+            let ny = dy / ry; // -1.0 at top (head), +1.0 at bottom (torso)
+
+            let d = if ny < 0.0 {
+                let up_y = -ny;
+                let chamfer = (nx + up_y * 0.75 - 1.22).max(0.0);
+                let box_d = nx.max(up_y) - 1.0;
+                box_d.max(chamfer * 1.4)
+            } else {
+                (nx + ny * 0.92 - 1.0) * 0.7071
+            };
+            d * rx.min(ry)
+        }
         Shape::Rounded(r) => {
             let qx = dx.abs() - (cx - r);
             let qy = dy.abs() - (cy - r);
@@ -300,25 +351,39 @@ fn coverage(shape: Shape, px: f32, py: f32, tw: f32, th: f32, inset: f32) -> f32
         }
         Shape::Heart => {
             let r = tw.min(th) / 2.0;
-            let x = dx.abs() / (r * 0.95);
-            let y = -dy / (r * 0.95) + 0.38;
-            let d = if y + x > 1.0 {
-                ((x - 0.25).powi(2) + (y - 0.75).powi(2)).sqrt() - std::f32::consts::SQRT_2 / 4.0
+            // Face-Safe zone: guaranteed circle preserving central face & forehead
+            let face_dx = dx;
+            let face_dy = dy + r * 0.15;
+            let face_d = (face_dx * face_dx + face_dy * face_dy).sqrt() - (r * 0.58);
+
+            // Elevated, soft romantic cleft notch
+            let x = dx.abs() / (r * 0.96);
+            let y = -dy / (r * 0.96) + 0.28;
+            let d_heart = if y + x > 1.05 {
+                ((x - 0.28).powi(2) + (y - 0.72).powi(2)).sqrt() - 0.42
             } else {
-                let d1 = (x - 0.0).powi(2) + (y - 1.0).powi(2);
+                let d1 = x.powi(2) + (y - 0.92).powi(2);
                 let k = 0.5 * (x + y).max(0.0);
                 let d2 = (x - k).powi(2) + (y - k).powi(2);
                 let sign = if x < y { -1.0 } else { 1.0 };
                 d1.min(d2).sqrt() * sign
             };
-            d * (r * 0.95)
+            let heart_d = d_heart * (r * 0.96);
+            heart_d.min(face_d)
         }
         Shape::Star => {
             let r = tw.min(th) / 2.0;
-            let ax = dx.abs();
-            let ay = dy.abs();
-            let astroid = ax.powf(0.55) + ay.powf(0.55) - (r * 0.9).powf(0.55);
-            astroid * r.powf(0.45)
+            let dist_sq = dx * dx + dy * dy;
+            let core_r = r * 0.72;
+            if dist_sq < core_r * core_r {
+                dist_sq.sqrt() - core_r
+            } else {
+                let core_d = dist_sq.sqrt() - core_r;
+                let ax = dx.abs();
+                let ay = dy.abs();
+                let star_hyp = (ax + ay) * 0.7071 + (ax.max(ay)) * 0.45 - r * 0.95;
+                star_hyp.min(core_d)
+            }
         }
     };
     (0.5 - (sd + inset)).clamp(0.0, 1.0)
@@ -329,7 +394,7 @@ fn shaped(img: &DynamicImage, w: u32, h: u32, width_frac: f32, tile_aspect_h_ove
     let tw = (w as f32 * width_frac) as u32;
     let th = (tw as f32 * tile_aspect_h_over_w) as u32;
     let (x, y, cw, ch) = smart_crop(img, tw as f32 / th as f32);
-    let tile = img.crop_imm(x, y, cw, ch).resize_exact(tw, th, FilterType::Lanczos3).to_rgba8();
+    let tile = img.crop_imm(x, y, cw, ch).resize_exact(tw, th, FilterType::Triangle).to_rgba8();
     let (ox, oy) = ((w - tw) as i64 / 2, (h - th) as i64 / 2);
 
     let border_f = [border_color[0] as f32, border_color[1] as f32, border_color[2] as f32];
@@ -359,51 +424,260 @@ fn shaped(img: &DynamicImage, w: u32, h: u32, width_frac: f32, tile_aspect_h_ove
     canvas
 }
 
-/// Apply decorative event elements (floating hearts, confetti, sparkles)
-pub fn apply_event_decorations(canvas: &mut RgbaImage, event: EventTheme, sticker_theme: &str, shot_idx: usize, total_shots: usize) {
+/// Apply decorative event elements and banner badge backgrounds
+pub fn apply_event_decorations(canvas: &mut RgbaImage, event: EventTheme, sticker_theme: &str, banner_style: BannerStyle, shot_idx: usize, total_shots: usize) {
     let (w, h) = (canvas.width(), canvas.height());
 
-    // Draw top frosted glass badge base on opener and closing shots
+    // Draw styled greeting banner base on opener (and closing) shot
     if shot_idx == 0 || shot_idx == total_shots.saturating_sub(1) {
-        let badge_w = 560u32;
-        let badge_h = 84u32;
-        let bx = (w.saturating_sub(badge_w)) / 2;
-        let by = 120u32;
-        let r = badge_h as f32 / 2.0;
-
         let badge_border = match event {
-            EventTheme::Anniversary | EventTheme::Romantic => Rgba([255, 140, 180, 220]),
-            EventTheme::Birthday | EventTheme::Party => Rgba([255, 215, 60, 220]),
-            EventTheme::Travel => Rgba([80, 210, 255, 220]),
-            EventTheme::General => Rgba([200, 210, 230, 200]),
+            EventTheme::Anniversary | EventTheme::Romantic => Rgba([255, 140, 180, 230]),
+            EventTheme::Birthday | EventTheme::Party => Rgba([255, 215, 60, 230]),
+            EventTheme::Travel => Rgba([80, 210, 255, 230]),
+            EventTheme::Fitness => Rgba([255, 90, 50, 230]),
+            EventTheme::Food => Rgba([255, 165, 0, 230]),
+            EventTheme::Fashion => Rgba([230, 80, 180, 230]),
+            EventTheme::Business => Rgba([60, 140, 255, 230]),
+            EventTheme::Pets => Rgba([250, 200, 80, 230]),
+            EventTheme::Graduation => Rgba([255, 215, 0, 230]),
+            EventTheme::General => Rgba([200, 210, 230, 220]),
         };
 
-        for py in 0..badge_h {
-            for px in 0..badge_w {
-                let dx = px as f32 - (badge_w as f32 / 2.0);
-                let dy = py as f32 - r;
-                let qx = dx.abs() - (badge_w as f32 / 2.0 - r);
-                let sd = if qx > 0.0 { (qx * qx + dy * dy).sqrt() - r } else { dy.abs() - r };
+        match banner_style {
+            BannerStyle::CircularStamp => {
+                // Circular emblem / seal badge at upper center
+                let cx = (w / 2) as f32;
+                let cy = 290.0f32;
+                let r_outer = 152.0f32;
+                let r_inner = 136.0f32;
 
-                if sd <= 0.0 {
-                    let cx = bx + px;
-                    let cy = by + py;
-                    if cx < w && cy < h {
-                        if sd > -2.5 {
-                            canvas.put_pixel(cx, cy, badge_border);
-                        } else {
-                            // Frosted dark pill background
-                            let old = canvas.get_pixel(cx, cy);
+                let min_x = (cx - r_outer - 90.0).max(0.0) as u32;
+                let max_x = (cx + r_outer + 90.0).min(w as f32) as u32;
+                let min_y = (cy - r_outer - 10.0).max(0.0) as u32;
+                let max_y = (cy + r_outer + 10.0).min(h as f32) as u32;
+
+                for py in min_y..max_y {
+                    for px in min_x..max_x {
+                        let dx = px as f32 - cx;
+                        let dy = py as f32 - cy;
+                        let dist = (dx * dx + dy * dy).sqrt();
+
+                        // 1. Center frosted glass circle
+                        if dist <= r_inner {
+                            let old = canvas.get_pixel(px, py);
                             canvas.put_pixel(
-                                cx,
-                                cy,
+                                px,
+                                py,
                                 Rgba([
-                                    (old[0] as f32 * 0.22) as u8,
-                                    (old[1] as f32 * 0.22) as u8,
-                                    (old[2] as f32 * 0.25) as u8,
-                                    255,
+                                    (old[0] as f32 * 0.16) as u8,
+                                    (old[1] as f32 * 0.16) as u8,
+                                    (old[2] as f32 * 0.22) as u8,
+                                    250,
                                 ]),
                             );
+                        } else if dist <= r_outer && dist >= r_inner {
+                            // 2. Double border ring with circular accent notches
+                            let is_ring = dist >= r_outer - 3.5 || dist <= r_inner + 3.0;
+                            let angle = dy.atan2(dx);
+                            let is_notch = (angle * 12.0).sin().abs() > 0.85;
+
+                            if is_ring || is_notch {
+                                canvas.put_pixel(px, py, badge_border);
+                            } else {
+                                let old = canvas.get_pixel(px, py);
+                                canvas.put_pixel(
+                                    px,
+                                    py,
+                                    Rgba([
+                                        (old[0] as f32 * 0.28) as u8,
+                                        (old[1] as f32 * 0.28) as u8,
+                                        (old[2] as f32 * 0.35) as u8,
+                                        240,
+                                    ]),
+                                );
+                            }
+                        }
+
+                        // 3. Side decorative ribbons extending left and right
+                        let ribbon_y_dist = (py as f32 - cy).abs();
+                        if ribbon_y_dist <= 26.0 {
+                            let ribbon_x_dist = dx.abs();
+                            if ribbon_x_dist > r_outer - 8.0 && ribbon_x_dist <= r_outer + 80.0 {
+                                if ribbon_y_dist >= 23.5 || ribbon_x_dist >= r_outer + 77.0 {
+                                    canvas.put_pixel(px, py, badge_border);
+                                } else {
+                                    let old = canvas.get_pixel(px, py);
+                                    canvas.put_pixel(
+                                        px,
+                                        py,
+                                        Rgba([
+                                            (old[0] as f32 * 0.22) as u8,
+                                            (old[1] as f32 * 0.22) as u8,
+                                            (old[2] as f32 * 0.28) as u8,
+                                            230,
+                                        ]),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            BannerStyle::LowerThird => {
+                // Editorial cinematic lower-third card
+                let card_w = w - 120;
+                let card_h = 120u32;
+                let bx = 60u32;
+                let by = h - 360;
+                let r = 16.0f32;
+
+                for py in 0..card_h {
+                    for px in 0..card_w {
+                        let qx = (px as f32 - card_w as f32 / 2.0).abs() - (card_w as f32 / 2.0 - r);
+                        let qy = (py as f32 - card_h as f32 / 2.0).abs() - (card_h as f32 / 2.0 - r);
+                        let sd = if qx > 0.0 && qy > 0.0 {
+                            (qx * qx + qy * qy).sqrt() - r
+                        } else {
+                            qx.max(qy)
+                        };
+
+                        if sd <= 0.0 {
+                            let cx = bx + px;
+                            let cy = by + py;
+                            if cx < w && cy < h {
+                                // Left accent stripe
+                                if px >= 16 && px <= 24 && py >= 20 && py <= card_h - 20 {
+                                    canvas.put_pixel(cx, cy, badge_border);
+                                } else if sd > -2.0 {
+                                    canvas.put_pixel(cx, cy, Rgba([badge_border[0], badge_border[1], badge_border[2], 180]));
+                                } else {
+                                    let old = canvas.get_pixel(cx, cy);
+                                    canvas.put_pixel(
+                                        cx,
+                                        cy,
+                                        Rgba([
+                                            (old[0] as f32 * 0.18) as u8,
+                                            (old[1] as f32 * 0.18) as u8,
+                                            (old[2] as f32 * 0.24) as u8,
+                                            245,
+                                        ]),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            BannerStyle::CenterHero => {
+                // Bold magazine headline card across center
+                let card_w = w - 80;
+                let card_h = 180u32;
+                let bx = 40u32;
+                let by = (h / 2).saturating_sub(90);
+
+                for py in 0..card_h {
+                    for px in 0..card_w {
+                        let cx = bx + px;
+                        let cy = by + py;
+                        if cx < w && cy < h {
+                            let is_edge = py < 3 || py >= card_h - 3 || px < 2 || px >= card_w - 2;
+                            if is_edge {
+                                canvas.put_pixel(cx, cy, badge_border);
+                            } else {
+                                let old = canvas.get_pixel(cx, cy);
+                                canvas.put_pixel(
+                                    cx,
+                                    cy,
+                                    Rgba([
+                                        (old[0] as f32 * 0.15) as u8,
+                                        (old[1] as f32 * 0.15) as u8,
+                                        (old[2] as f32 * 0.20) as u8,
+                                        245,
+                                    ]),
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+
+            BannerStyle::BottomFloat => {
+                // Minimalist floating pill at bottom
+                let badge_w = 520u32;
+                let badge_h = 76u32;
+                let bx = (w.saturating_sub(badge_w)) / 2;
+                let by = h - 240;
+                let r = badge_h as f32 / 2.0;
+
+                for py in 0..badge_h {
+                    for px in 0..badge_w {
+                        let dx = px as f32 - (badge_w as f32 / 2.0);
+                        let dy = py as f32 - r;
+                        let qx = dx.abs() - (badge_w as f32 / 2.0 - r);
+                        let sd = if qx > 0.0 { (qx * qx + dy * dy).sqrt() - r } else { dy.abs() - r };
+
+                        if sd <= 0.0 {
+                            let cx = bx + px;
+                            let cy = by + py;
+                            if cx < w && cy < h {
+                                if sd > -2.5 {
+                                    canvas.put_pixel(cx, cy, badge_border);
+                                } else {
+                                    let old = canvas.get_pixel(cx, cy);
+                                    canvas.put_pixel(
+                                        cx,
+                                        cy,
+                                        Rgba([
+                                            (old[0] as f32 * 0.20) as u8,
+                                            (old[1] as f32 * 0.20) as u8,
+                                            (old[2] as f32 * 0.25) as u8,
+                                            240,
+                                        ]),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            BannerStyle::TopPill => {
+                // Standard floating frosted pill at top
+                let badge_w = 560u32;
+                let badge_h = 84u32;
+                let bx = (w.saturating_sub(badge_w)) / 2;
+                let by = 120u32;
+                let r = badge_h as f32 / 2.0;
+
+                for py in 0..badge_h {
+                    for px in 0..badge_w {
+                        let dx = px as f32 - (badge_w as f32 / 2.0);
+                        let dy = py as f32 - r;
+                        let qx = dx.abs() - (badge_w as f32 / 2.0 - r);
+                        let sd = if qx > 0.0 { (qx * qx + dy * dy).sqrt() - r } else { dy.abs() - r };
+
+                        if sd <= 0.0 {
+                            let cx = bx + px;
+                            let cy = by + py;
+                            if cx < w && cy < h {
+                                if sd > -2.5 {
+                                    canvas.put_pixel(cx, cy, badge_border);
+                                } else {
+                                    let old = canvas.get_pixel(cx, cy);
+                                    canvas.put_pixel(
+                                        cx,
+                                        cy,
+                                        Rgba([
+                                            (old[0] as f32 * 0.22) as u8,
+                                            (old[1] as f32 * 0.22) as u8,
+                                            (old[2] as f32 * 0.25) as u8,
+                                            255,
+                                        ]),
+                                    );
+                                }
+                            }
                         }
                     }
                 }

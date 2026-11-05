@@ -734,17 +734,10 @@ pub fn find_template(id: &str) -> Option<&'static ReelTemplate> {
 }
 
 /// Split title into two lines: Line 1 (Event / Prefix) and Line 2 (Name / Subject in accent color)
-pub fn split_title(raw: &str, event: EventTheme) -> (String, String) {
+pub fn split_title(raw: &str, _event: EventTheme) -> (String, String) {
     let clean = raw.trim();
     if clean.is_empty() {
-        return match event {
-            EventTheme::Birthday => ("HAPPY BIRTHDAY".to_string(), "CELEBRATION 🎉".to_string()),
-            EventTheme::Anniversary => ("HAPPY ANNIVERSARY".to_string(), "TOGETHER FOREVER ❤️".to_string()),
-            EventTheme::Romantic => ("FOREVER & ALWAYS".to_string(), "MY SWEET LOVE 💖".to_string()),
-            EventTheme::Party => ("WEEKEND VIBES".to_string(), "PARTY TIME 🍾".to_string()),
-            EventTheme::Travel => ("WANDERLUST".to_string(), "TRAVEL MEMORIES ✈️".to_string()),
-            EventTheme::General => ("SPECIAL MOMENTS".to_string(), "MEMORIES ✨".to_string()),
-        };
+        return ("".to_string(), "".to_string());
     }
 
     let lower = clean.to_lowercase();

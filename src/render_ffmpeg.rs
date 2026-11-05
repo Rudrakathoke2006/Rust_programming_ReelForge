@@ -34,10 +34,10 @@ pub fn build_args(cfg: &Config, shots: &[Shot]) -> Vec<String> {
             crate::types::ShotMotion::ZoomIn => format!("1.0+0.14*on/{d}"),
             crate::types::ShotMotion::ZoomOut => format!("1.14-0.14*on/{d}"),
         };
+        let zw = (w as f32 * 1.15) as u32;
+        let zh = (h as f32 * 1.15) as u32;
         f.push_str(&format!(
-            "[{i}:v]scale={}:{},zoompan=z='{z}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={d}:s={w}x{h}:fps={fps},setsar=1,format=yuv420p[v{i}];",
-            w * 3 / 2,
-            h * 3 / 2
+            "[{i}:v]scale={zw}:{zh},zoompan=z='{z}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={d}:s={w}x{h}:fps={fps},setsar=1,format=yuv420p[v{i}];"
         ));
     }
 
@@ -87,14 +87,46 @@ pub fn build_args(cfg: &Config, shots: &[Shot]) -> Vec<String> {
                 "0xffd700"
             };
 
-            let badge_duration = (total.min(3.8)).max(2.2);
-            // Two-tone dynamic hero title in opening hook:
-            // Line 1: Elegant uppercase prefix/occasion (white @ 90% opacity, size 26, y=120)
-            // Line 2: Bold hero subject/name in template palette accent (size 42, y=160)
-            text_filter = format!(
-                ",drawtext=fontfile='{font}':text='{line1_clean}':fontsize=26:fontcolor=white@0.9:x=(w-text_w)/2:y=120:enable='between(t,0.2,{badge_duration:.2})'\
-                ,drawtext=fontfile='{font}':text='{line2_clean}':fontsize=42:fontcolor={accent_hex}:x=(w-text_w)/2:y=160:enable='between(t,0.2,{badge_duration:.2})'"
-            );
+            let badge_duration = (total.min(4.2)).max(2.2);
+            let h = cfg.height as i32;
+
+            let (y_line1, y_line2, font_size1, font_size2, x_expr1, x_expr2) = match cfg.banner_style {
+                crate::types::BannerStyle::CircularStamp => {
+                    // Aligned directly in the circular emblem seal
+                    (240, 290, 20, 38, "(w-text_w)/2".to_string(), "(w-text_w)/2".to_string())
+                }
+                crate::types::BannerStyle::LowerThird => {
+                    // Left-aligned in the cinematic lower-third card
+                    (h - 330, h - 290, 22, 38, "100".to_string(), "100".to_string())
+                }
+                crate::types::BannerStyle::CenterHero => {
+                    // Bold magazine headline across the center
+                    ((h / 2) - 65, (h / 2) - 15, 26, 50, "(w-text_w)/2".to_string(), "(w-text_w)/2".to_string())
+                }
+                crate::types::BannerStyle::BottomFloat => {
+                    (h - 225, h - 192, 19, 34, "(w-text_w)/2".to_string(), "(w-text_w)/2".to_string())
+                }
+                crate::types::BannerStyle::TopPill => {
+                    (120, 160, 24, 40, "(w-text_w)/2".to_string(), "(w-text_w)/2".to_string())
+                }
+            };
+
+            if !line1_clean.is_empty() || !line2_clean.is_empty() {
+                let mut parts = Vec::new();
+                if !line1_clean.is_empty() {
+                    parts.push(format!(
+                        "drawtext=fontfile='{font}':text='{line1_clean}':fontsize={font_size1}:fontcolor=white@0.9:x={x_expr1}:y={y_line1}:enable='between(t,0.2,{badge_duration:.2})'"
+                    ));
+                }
+                if !line2_clean.is_empty() {
+                    parts.push(format!(
+                        "drawtext=fontfile='{font}':text='{line2_clean}':fontsize={font_size2}:fontcolor={accent_hex}:x={x_expr2}:y={y_line2}:enable='between(t,0.2,{badge_duration:.2})'"
+                    ));
+                }
+                if !parts.is_empty() {
+                    text_filter = format!(",{}", parts.join(","));
+                }
+            }
         }
     }
 
@@ -119,8 +151,13 @@ pub fn build_args(cfg: &Config, shots: &[Shot]) -> Vec<String> {
     }
     let tail: Vec<String> = vec![
         "-t".into(), format!("{total:.3}"),
-        "-c:v".into(), "libx264".into(), "-preset".into(), "medium".into(), "-crf".into(), "18".into(),
-        "-pix_fmt".into(), "yuv420p".into(), "-r".into(), fps.to_string(),
+        "-c:v".into(), "libx264".into(),
+        "-preset".into(), "ultrafast".into(),
+        "-crf".into(), "22".into(),
+        "-tune".into(), "fastdecode".into(),
+        "-threads".into(), "0".into(),
+        "-pix_fmt".into(), "yuv420p".into(),
+        "-r".into(), fps.to_string(),
         "-movflags".into(), "+faststart".into(),
     ];
     args.extend(tail);

@@ -20,6 +20,12 @@ pub enum EventTheme {
     Romantic,
     Party,
     Travel,
+    Fitness,
+    Food,
+    Fashion,
+    Business,
+    Pets,
+    Graduation,
 }
 
 impl EventTheme {
@@ -30,6 +36,12 @@ impl EventTheme {
             "romantic" | "love" => Self::Romantic,
             "party" | "celebration" => Self::Party,
             "travel" | "trip" => Self::Travel,
+            "fitness" | "gym" | "workout" => Self::Fitness,
+            "food" | "dining" | "cafe" => Self::Food,
+            "fashion" | "ootd" | "lookbook" => Self::Fashion,
+            "business" | "promo" | "product" => Self::Business,
+            "pets" | "animals" | "dog" | "cat" => Self::Pets,
+            "graduation" | "milestone" => Self::Graduation,
             _ => Self::General,
         }
     }
@@ -41,7 +53,30 @@ impl EventTheme {
             Self::Romantic => "💖 Forever & Always 💕",
             Self::Party => "🎉 Celebration Time 🍾",
             Self::Travel => "✈️ Wanderlust Memories 📸",
+            Self::Fitness => "🏋️‍♂️ Beast Mode & Fitness ⚡",
+            Self::Food => "🍕 Delicious Delights & Food 🍽️",
+            Self::Fashion => "👗 Lookbook & Editorial 💄",
+            Self::Business => "💼 Showcase & Brand 🚀",
+            Self::Pets => "🐾 Best Friends & Paws 🐶",
+            Self::Graduation => "🎓 Milestone & Success 🏆",
             Self::General => "✨ Special Moments ✨",
+        }
+    }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Birthday => "birthday",
+            Self::Anniversary => "anniversary",
+            Self::Romantic => "romantic",
+            Self::Party => "party",
+            Self::Travel => "travel",
+            Self::Fitness => "fitness",
+            Self::Food => "food",
+            Self::Fashion => "fashion",
+            Self::Business => "business",
+            Self::Pets => "pets",
+            Self::Graduation => "graduation",
+            Self::General => "general",
         }
     }
 }
@@ -53,6 +88,10 @@ pub enum MotionMode {
     Boomerang,
     FastForward,
     KenBurns,
+    BeatDrop,
+    WaveFlow,
+    TikTokSnap,
+    VintageRoll,
 }
 
 impl MotionMode {
@@ -61,7 +100,24 @@ impl MotionMode {
             "boomerang" => Self::Boomerang,
             "fast-forward" | "fastforward" | "fast" => Self::FastForward,
             "kenburns" | "ken-burns" | "cinematic" => Self::KenBurns,
+            "beatdrop" | "beat-drop" | "staccato" => Self::BeatDrop,
+            "waveflow" | "wave-flow" | "smooth" => Self::WaveFlow,
+            "tiktok" | "tiktok-snap" | "snap" => Self::TikTokSnap,
+            "vintage" | "vintage-roll" | "film" => Self::VintageRoll,
             _ => Self::DynamicMix,
+        }
+    }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::DynamicMix => "dynamic-mix",
+            Self::Boomerang => "boomerang",
+            Self::FastForward => "fast-forward",
+            Self::KenBurns => "ken-burns",
+            Self::BeatDrop => "beat-drop",
+            Self::WaveFlow => "wave-flow",
+            Self::TikTokSnap => "tiktok-snap",
+            Self::VintageRoll => "vintage-roll",
         }
     }
 }
@@ -72,6 +128,37 @@ pub enum ShotMotion {
     FastForward,
     ZoomIn,
     ZoomOut,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum BannerStyle {
+    CircularStamp, // Circular emblem with circular ring border, star/heart seal & centered hero text
+    TopPill,       // Floating glassmorphism pill badge at top
+    LowerThird,    // Editorial cinematic lower-third bar
+    CenterHero,    // Dramatic bold magazine headline across center
+    BottomFloat,   // Minimalist floating bottom badge
+}
+
+impl BannerStyle {
+    pub fn from_str(s: &str) -> Self {
+        match s.to_lowercase().trim() {
+            "circular" | "circle" | "stamp" | "curved" => BannerStyle::CircularStamp,
+            "lower" | "lower_third" | "lower-third" => BannerStyle::LowerThird,
+            "center" | "center_hero" | "center-hero" | "headline" => BannerStyle::CenterHero,
+            "bottom" | "bottom_float" | "bottom-float" => BannerStyle::BottomFloat,
+            _ => BannerStyle::TopPill,
+        }
+    }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            BannerStyle::CircularStamp => "circular",
+            BannerStyle::TopPill => "top_pill",
+            BannerStyle::LowerThird => "lower_third",
+            BannerStyle::CenterHero => "center_hero",
+            BannerStyle::BottomFloat => "bottom_float",
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -88,6 +175,7 @@ pub struct Config {
     pub engine: Engine,
     pub event: EventTheme,
     pub motion: MotionMode,
+    pub banner_style: BannerStyle,
     pub title: Option<String>,
     pub stickers: bool,
     pub template_id: Option<String>,

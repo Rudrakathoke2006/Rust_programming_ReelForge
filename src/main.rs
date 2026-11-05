@@ -1,5 +1,6 @@
 mod analyze;
 mod analytics;
+mod audio_catalog;
 mod compose;
 mod pipeline;
 mod render_ffmpeg;
@@ -10,7 +11,7 @@ mod types;
 
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
-use types::{Config, Engine};
+use types::{BannerStyle, Config, Engine};
 
 #[derive(Parser)]
 #[command(name = "reelforge", about = "Photos → vertical reel (analyse, smart-crop, shape, cut, render)")]
@@ -105,6 +106,7 @@ async fn main() -> anyhow::Result<()> {
                 engine,
                 event,
                 motion,
+                banner_style: BannerStyle::TopPill,
                 title,
                 stickers,
                 template_id: template,

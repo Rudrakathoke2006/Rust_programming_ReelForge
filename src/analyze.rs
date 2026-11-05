@@ -23,7 +23,7 @@ pub fn collect_images(dir: &Path) -> Vec<PathBuf> {
     v
 }
 
-/// Decode and honour EXIF orientation (phone photos!).
+/// Decode, honour EXIF orientation, and fast-downsample to 1080x1920 max boundary.
 pub fn load(path: &Path) -> Result<DynamicImage> {
     let mut decoder = ImageReader::open(path)
         .with_context(|| format!("open {}", path.display()))?
@@ -32,6 +32,9 @@ pub fn load(path: &Path) -> Result<DynamicImage> {
     let orientation = decoder.orientation()?;
     let mut img = DynamicImage::from_decoder(decoder)?;
     img.apply_orientation(orientation);
+    if img.width() > 1920 || img.height() > 1920 {
+        img = img.thumbnail(1080, 1920);
+    }
     Ok(img)
 }
 
@@ -128,7 +131,10 @@ pub fn smart_crop(img: &DynamicImage, aspect: f32) -> (u32, u32, u32, u32) {
             .collect();
         for y0 in 0..=steps_y {
             let s: f32 = (y0..y0 + th).map(|y| row_sums[y]).sum();
-            let c = 1.0 - 0.15 * ((y0 as f32 + th as f32 / 2.0) / e.h as f32 - 0.5).abs();
+            // Portrait headroom protection: cutting off the top of subjects (heads/faces) is jarring.
+            // Prioritize preserving headroom while keeping the center of interest naturally framed.
+            let headroom_bias = 1.0 - 0.22 * (y0 as f32 / steps_y as f32);
+            let c = (1.0 - 0.12 * ((y0 as f32 + th as f32 / 2.0) / e.h as f32 - 0.45).abs()) * headroom_bias;
             if s * c > best.2 {
                 best = (0, y0, s * c);
             }

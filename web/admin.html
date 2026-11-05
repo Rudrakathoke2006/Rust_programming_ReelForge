@@ -3,40 +3,56 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ReelForge — Creator Analytics & User Intelligence Dashboard</title>
+<title>ReelForge — Admin & User Intelligence Dashboard</title>
+<script>
+  (function() {
+    try {
+      const auth = JSON.parse(localStorage.getItem('reelforge_auth') || 'null');
+      if (!auth || !auth.email) {
+        window.location.replace('/login?admin=required&redirect=/admin');
+        return;
+      }
+      if (auth.role !== 'admin' || auth.email.toLowerCase() !== 'rudrakathoke1405@gmail.com') {
+        alert('Access Denied: The Admin & User Intelligence Hub is restricted to Administrator accounts.');
+        window.location.replace('/?denied=admin_only');
+      }
+    } catch(e) {
+      window.location.replace('/login?admin=required&redirect=/admin');
+    }
+  })();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg-dark: #080a0f;
-    --card-bg: #11141e;
-    --card-hover: #171b29;
-    --card-border: #1f2537;
-    --primary: #7952f5;
-    --primary-glow: rgba(121, 82, 245, 0.25);
+    --bg-dark: #090d16;
+    --card-bg: #121722;
+    --card-hover: #182030;
+    --card-border: #1e293b;
+    --primary: #2563eb;
     --accent-emerald: #10b981;
     --accent-gold: #f59e0b;
     --accent-pink: #ec4899;
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
     --text-dim: #64748b;
-    --radius-sm: 8px;
-    --radius-md: 14px;
-    --radius-lg: 20px;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
     --radius-pill: 999px;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    background: var(--bg-dark);
+    background-color: var(--bg-dark);
     color: var(--text-main);
     min-height: 100vh;
-    padding: 30px 20px 80px;
+    padding: 24px 20px 80px;
     background-image: 
-      radial-gradient(circle at 10% 0%, rgba(121, 82, 245, 0.12) 0%, transparent 40%),
-      radial-gradient(circle at 90% 10%, rgba(16, 185, 129, 0.08) 0%, transparent 40%);
+      radial-gradient(100% 60% at 50% 0%, rgba(30, 41, 59, 0.35) 0%, transparent 100%),
+      linear-gradient(to bottom, #090d16, #0c101a);
   }
 
   .container {
@@ -49,9 +65,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 28px;
-    padding-bottom: 18px;
-    border-bottom: 1px solid var(--card-border);
+    margin-bottom: 24px;
+    padding: 14px 18px;
+    background: #101521;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-md);
   }
   .brand {
     display: flex;
@@ -59,23 +77,21 @@
     gap: 12px;
   }
   .brand-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, var(--primary), #a855f7);
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    background: #1e293b;
+    border: 1px solid #334155;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
-    box-shadow: 0 4px 15px var(--primary-glow);
+    font-size: 18px;
   }
   .brand-text h1 {
-    font-size: 20px;
+    font-size: 17px;
     font-weight: 800;
     letter-spacing: -0.3px;
-    background: linear-gradient(135deg, #fff 60%, #cbd5e1);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: #ffffff;
   }
   .brand-text .tagline {
     font-size: 12px;
@@ -84,33 +100,33 @@
   .top-actions {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    flex-wrap: wrap;
   }
   .btn-nav {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 9px 16px;
-    border-radius: var(--radius-pill);
-    background: rgba(255, 255, 255, 0.06);
+    padding: 7px 12px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.05);
     color: #fff;
     border: 1px solid var(--card-border);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     text-decoration: none;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
   }
   .btn-nav:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
   }
   .btn-primary {
     background: var(--primary);
-    border-color: var(--primary);
+    border-color: rgba(255, 255, 255, 0.15);
   }
   .btn-primary:hover {
-    background: #6840ec;
+    background: #1d4ed8;
   }
 
   /* Live Pulse Indicator */
@@ -350,19 +366,28 @@
   <!-- Top Navigation Bar -->
   <header class="top-bar">
     <div class="brand">
-      <div class="brand-icon">📊</div>
+      <div class="brand-icon">🛡️</div>
       <div class="brand-text">
-        <h1>ReelForge Intelligence & User Hub</h1>
-        <div class="tagline">Real-time creator tracking, usage metrics & reel production analytics</div>
+        <h1>Admin & User Intelligence Hub</h1>
+        <div class="tagline">Superuser Telemetry &bull; Creator Profiling &bull; Engine Performance</div>
       </div>
     </div>
     <div class="top-actions">
       <div class="live-indicator">
         <span class="pulse-dot"></span>
-        Live Analytics Active
+        Superuser Active
       </div>
-      <button id="refreshBtn" class="btn-nav">🔄 Refresh</button>
-      <a href="/" class="btn-nav btn-primary">🎬 Studio UI</a>
+      <div style="font-size: 12px; color: #fbbf24; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 6px 10px; border-radius: var(--radius-sm); font-weight: 600;">
+        rudrakathoke1405@gmail.com
+      </div>
+      <a href="/" class="btn-nav">
+        <span>🎬</span>
+        <span>Reel Studio</span>
+      </a>
+      <button type="button" class="btn-nav" onclick="reelforgeLogout()">
+        <span>Sign Out ↗</span>
+      </button>
+      <button id="refreshBtn" class="btn-nav btn-primary">🔄 Refresh</button>
     </div>
   </header>
 
@@ -647,6 +672,11 @@
   document.getElementById('userSearch').addEventListener('input', () => {
     if (analyticsData) renderUsersTable(analyticsData.users || []);
   });
+
+  function reelforgeLogout() {
+    localStorage.removeItem('reelforge_auth');
+    window.location.replace('/login?logged_out=1');
+  }
 
   // Initial fetch + Auto-refresh every 12 seconds
   fetchAnalytics();
